@@ -1,0 +1,29 @@
+<html>
+<body>
+<script>
+
+
+	$(document).click(function(event) { 
+	  var $target = $(event.target);
+	  if(!$target.closest('#menucontainer').length && 
+	  $('#menucontainer').is(":visible")) {
+		$('#menucontainer').hide();
+	  }        
+	});
+	
+	function promotePawn(x,y){
+		console.log("Promote Pawn: " + x + " " + y);
+	}
+
+</script>
+<table>
+	<table>
+		<tr id = "xTR">
+			<td onclick = promotePawn("a8","n")><img src="assets/blackPieces/knight.png" class="overlay" height = 97px width = 97px style = "opacity:1.0" ></td>
+			<td onclick = promotePawn("a8","b")><img src="assets/blackPieces/bishop.png" class="overlay" height = 97px width = 97px style = "opacity:1.0" ></td>
+			<td onclick = promotePawn("a8","r")><img src="assets/blackPieces/rook.png"   class="overlay" height = 97px width = 97px style = "opacity:1.0" ></td>
+			<td onclick = promotePawn("a8","q")><img src="assets/blackPieces/queen.png"  class="overlay" height = 97px width = 97px style = "opacity:1.0" ></td>
+		</tr>
+	</table>
+</body>
+</html>

@@ -1,6 +1,7 @@
 <html>
 <head>
 	<title>KiChess</title>
+	<link rel="icon" href="assets/whitePieces/rook.png">
 </head>
 
 <style>
@@ -35,11 +36,11 @@
 		left: 0;
 	}
 
-	.blacksquare {
+	.bsqr {
 		background-color: #5c3f2e;
 	}
 
-	.whitesquare {
+	.wsqr {
 		background-color: #ffffb0;
 	}
 
@@ -47,7 +48,8 @@
 
 <script type="text/javascript">
 
-	var gamestate = "RNBKQBNR;PPPPPPPP;________;________;________;________;pppppppp;rnbkqbnr;";
+
+	var gamestate = "________;________;________;________;________;________;________;________;";
 	var extendedState = {
 		"isWhitesTurn": true,
 		"whiteACastleable": true,
@@ -60,18 +62,178 @@
 	
 	var gameMetaData = {
 		"isWhiteHuman": true,
-		"isBlackHuman": true
+		"isBlackHuman": true,
+		"lastMovedPieceFrom": null,
+		"lastMovedPieceTo": null
 	}
 	
-	function getLegalMoves(coordinate){
+	function calculateBoardState(state, coord, piece){
 		
-		var piece = getPiece(coordinate);
+		var colNumber = coord[0].charCodeAt(0) - 96; // Col is given by leading letter. Convert this to integer from 1-8
+		var rowNumber = Number(coord[1]); 
 		
+		var position = 9 * (8 - rowNumber) + colNumber - 1;
 		
+		console.log("colIndex: " + colNumber + " rowNumber: " + rowNumber );
+		return( state.substring(0, position) + piece + state.substring(position + 1) );
+		console.log(gamestate);
 		
-		// TODO
-		return [];
+		// renderBoard(gamestate);
+	}
+		
+	function getLegalMoves(coord){
 	
+		
+		var piece = getPiece(coord);
+		var CandidateLegalMoves = [];
+
+		function isEnemyPiece(piece){
+			// possible performance increase by replacing this with "isAlliedPiece" and changing logic
+			if(piece === "_") {return false;}
+			
+			var isWhitePiece  = (piece == piece.toLowerCase());
+			return !(isWhitePiece === extendedState.isWhitesTurn);
+		}
+	
+		function transCoords(coord, y, x){
+			var newRank = coord[0].charCodeAt(0) - 96 + y; 
+			var newCol  = Number(coord[1]) + x;
+
+			if ( newCol < 1 ||  newCol > 8 ||  newRank < 1 || newRank > 8){
+				return null; // off the board
+			}else{
+				 return(String.fromCharCode(newRank + 96) + newCol);
+			}
+		}		
+
+		function amIInCheck(){
+			// TODO
+		}
+
+
+
+		function findAllMovesInLine(x,y){
+			var iter = 1;
+			var newCoords = transCoords(coord, x * iter, y * iter);
+			while( newCoords ){
+				if(getPiece(newCoords) == '_'){
+					CandidateLegalMoves.push(newCoords);
+				}else{ 
+					if(isEnemyPiece(getPiece(newCoords))){
+						CandidateLegalMoves.push(newCoords);
+						break; // If can capture, cant carry on after.
+					}else{
+						break; // Cannot take own piece
+					}
+				}
+				iter++;
+				newCoords = transCoords(coord,x * iter, y * iter);
+				
+			}
+		}
+
+		if( piece == 'R' || piece == 'r' ){  
+			
+			findAllMovesInLine(0,1);
+			findAllMovesInLine(1,0);
+			findAllMovesInLine(0,-1);
+			findAllMovesInLine(-1,0);
+
+		}
+		if( piece == 'N' || piece == 'n' ){  
+			
+			var allCoords = [transCoords(coord, 1, 2), transCoords(coord, 1, -2), transCoords(coord, -1, 2), transCoords(coord, -1, -2),	
+				transCoords(coord, 2, 1), transCoords(coord, 2, -1), transCoords(coord, -2, 1), transCoords(coord, -2, -1) ];
+			
+			for(var possCoords of allCoords){
+				// Possible null value error here..
+				if( !possCoords ){ continue; }
+				if( (getPiece(possCoords) == '_') || isEnemyPiece(getPiece(possCoords)) ){
+					CandidateLegalMoves.push(possCoords);
+				}		
+			}
+		} 
+		if( piece == 'B' || piece == 'b' ){  
+
+			findAllMovesInLine(+1,+1);
+			findAllMovesInLine(+1,-1);
+			findAllMovesInLine(-1,+1);	
+			findAllMovesInLine(-1,-1);
+		} 
+		if( piece == 'K' || piece == 'k' ){  
+			var allCoords = [transCoords(coord, 1, 1), transCoords(coord, 1, 0), transCoords(coord, 1, -1), transCoords(coord, 0, 1),	
+				transCoords(coord, 0, -1), transCoords(coord, -1, -1), transCoords(coord, -1, 0), transCoords(coord, -1, 1) ];
+				
+			for(var possCoords of allCoords){
+				// Possible null value error here..
+				if( !possCoords ){ continue; }
+				if( (getPiece(possCoords) == '_') || isEnemyPiece(getPiece(possCoords)) ){
+					CandidateLegalMoves.push(possCoords);
+				}		
+			}
+			// TODO: Castling rules
+			
+		} 
+		if( piece == 'Q' || piece == 'q' ){  
+			findAllMovesInLine(+1,+1);
+			findAllMovesInLine(+1,-1);
+			findAllMovesInLine(-1,+1);	
+			findAllMovesInLine(-1,-1);
+			findAllMovesInLine(0,1);
+			findAllMovesInLine(1,0);
+			findAllMovesInLine(0,-1);
+			findAllMovesInLine(-1,0);
+		} 
+		if( piece == 'P' ){  
+			// TODO
+			
+		}
+		if( piece === 'p' || piece === 'P' ){ 
+			
+			var direction = 1;
+			if(piece === "P"){
+				direction = -1;
+			}
+			
+			var newCoords = transCoords(coord, 0, direction * 1);
+			
+			// Pawn can move forwards
+			if( newCoords && getPiece(newCoords) === "_" ){
+				CandidateLegalMoves.push(newCoords);
+				
+				// Can move 2 spaces on first move:
+				if((piece === 'p' && coord.match('.2')) || (piece === 'P' && coord.match('.7'))){
+					newCoords = transCoords(coord, 0, direction * 2);
+					if( newCoords && getPiece(newCoords) === "_" ){
+						CandidateLegalMoves.push(newCoords);
+					}	
+				}
+
+			}			
+			
+			// Pawn can take diagonally
+			newCoords = transCoords(coord, 1, direction * 1);
+			if(  newCoords && isEnemyPiece(getPiece(newCoords)) ){
+				CandidateLegalMoves.push(newCoords);
+			}
+			newCoords = transCoords(coord, -1, direction * 1);
+			if(  newCoords && isEnemyPiece(getPiece(newCoords)) ){
+				CandidateLegalMoves.push(newCoords);
+			}
+			
+			// En-Passant.
+			
+			// Promotion rules
+			var promotionWindow = "<>"
+			
+		 } 
+		 
+		if( piece == '_'){
+			throw "This should not be possible - trying to move an empty square"
+		}
+		// TODO: Validate not in checks
+		return CandidateLegalMoves;
+			
 	}
 	
 	function markLegalMoves(coord){
@@ -80,18 +242,32 @@
 		var currentSquare = document.getElementById(coord);	
 		currentSquare.innerHTML = '<img src="assets/SelectedSquare.png" class="overlay" height = 97px width = 97px style = "opacity:1.0" >' +  currentSquare.innerHTML; // Show green selection
 		
-		getLegalMoves(coord);
+		var legalMoves = getLegalMoves(coord);
+		for (const move of legalMoves) {	
+			var newSquare = document.getElementById(move);
+			
+			console.log("move: " + move )
+			if(getPiece(move) !== "_")
+			{
+				newSquare.innerHTML += '<img src="assets/TakePiece.png" class="overlay" height = 97px width = 97px  >'; 
+			}else{
+				newSquare.innerHTML += '<img src="assets/MovePiece.png" class="overlay" height = 97px width = 97px  >'; 
+				// TODO: special cases of castling and en-passant
+			}
+	
+		}	
+		
 		// TODO:
 	}
 	
 	function getPiece(coordinate){
 
 		var columnIndex = coordinate[0].charCodeAt(0) - 97; // Col is given by leading letter. Convert this to integer from 0-7
-		var columnState = gamestate.split(";")[coordinate[1] - 1]; 
+		var columnState = gamestate.split(";")[8 - coordinate[1]]; 
 		
 		var cellContent = columnState[columnIndex];      
 		
-		console.log("At coordinate: " + coordinate + " there is a " + cellContent );
+		// console.log("At coordinate: " + coordinate + " there is a " + cellContent );
 		
 		return cellContent;
 	}
@@ -110,11 +286,11 @@
 				console.log("Selected empty square, nothing to do");
 				return;
 			}
-			if(extendedState.isWhitesTurn && ! (newSelectedPiece != newSelectedPiece.toLowerCase())){		
+			if(extendedState.isWhitesTurn && (newSelectedPiece != newSelectedPiece.toLowerCase())){		
 				console.log("// white tried to select their opponent's piece");
 				return;
 			}			
-			if(extendedState.isWhitesTurn && ! (newSelectedPiece != newSelectedPiece.toLowerCase())){		
+			if(! extendedState.isWhitesTurn && (newSelectedPiece != newSelectedPiece.toUpperCase())){		
 				console.log("// black tried to select their opponent's piece");
 				return;
 			}
@@ -132,13 +308,26 @@
 			const elements = document.getElementsByClassName("overlay");
 			while (elements.length > 0) elements[0].remove();
 			
-			// Validate legal moves
+			// Validate the move is in the set of legal moves
 			var legalMoves = getLegalMoves(previouslySelectedSquare);
 			
 			if(legalMoves.includes(coord)){
 				
-				// TODO: Process Move
-	
+				// Process Move
+				
+				gamestate = calculateBoardState(gamestate, coord, getPiece(previouslySelectedSquare));
+				gamestate = calculateBoardState(gamestate, previouslySelectedSquare, "_");
+				renderBoard(gamestate);
+				
+				extendedState.isWhitesTurn = !(extendedState.isWhitesTurn);
+				previouslySelectedSquare = null;
+				
+				// TODO: SPECIAL MOVES - En-Passant, Promotion, Castling:
+				
+				
+				
+				
+				
 				
 			}else{
 				// Not a move. Instead, just select the new piece (via recursive call) 
@@ -151,16 +340,26 @@
 	function startGame(){
 		// Caps is black, lower case for white pieces. N = knight, K = king.
 		var startingState = "RNBKQBNR;PPPPPPPP;________;________;________;________;pppppppp;rnbkqbnr;"
-		setGameToState(startingState);
+		extendedState =  {
+			"isWhitesTurn": true,
+			"whiteACastleable": true,
+			"whiteHCastleable": true,
+			"blackACastleable": true,
+			"blackHCastleable": true,
+			"EnpassanablePawn": false,
+			"StateRepetitionCounter": {}
+		}
+		
+		gamestate = startingState;
+		renderBoard(startingState);
 
 	}
 	
-	function setGameToState(startingState){
+	function renderBoard(startingState){
 	
 		var rows = startingState.split(';');
 		
-		var chessBoard = document.getElementsByTagName("td");
-		console.log(chessBoard.id);
+		var chessBoard = document.getElementsByClassName("square");
 		
 		var x = 0;
 		for (const row of rows) {		
@@ -179,6 +378,8 @@
 				if( cell == 'k' ){ chessBoard[x].innerHTML = '<img src="assets/whitePieces/king.png" height = 100px width = 100px >' } 
 				if( cell == 'q' ){ chessBoard[x].innerHTML = '<img src="assets/whitePieces/queen.png" height = 100px width = 100px >' } 
 				if( cell == 'p' ){ chessBoard[x].innerHTML = '<img src="assets/whitePieces/pawn.png" height = 100px width = 100px >' } 
+				
+				if( cell == '_' ){ chessBoard[x].innerHTML = '' } 
 			
 				x++
 			}
@@ -187,87 +388,86 @@
 
 </script>
 <body>	
-	<table>
-	 	<table>
+	<table id = "chessboard">
 	  <tr>
-		<td id="a8" onclick = selectSquare("a8") class="blacksquare"></td>
-		<td id="b8" onclick = selectSquare("b8") class="whitesquare"></td>
-		<td id="c8" onclick = selectSquare("c8") class="blacksquare"></td>
-		<td id="d8" onclick = selectSquare("d8") class="whitesquare"></td>
-		<td id="e8" onclick = selectSquare("e8") class="blacksquare"></td>
-		<td id="f8" onclick = selectSquare("f8") class="whitesquare"></td>
-		<td id="g8" onclick = selectSquare("g8") class="blacksquare"></td>
-		<td id="h8" onclick = selectSquare("h8") class="whitesquare"></td>
+		<td id="a8" onclick = selectSquare("a8") class="bsqr square"></td>
+		<td id="b8" onclick = selectSquare("b8") class="wsqr square"></td>
+		<td id="c8" onclick = selectSquare("c8") class="bsqr square"></td>
+		<td id="d8" onclick = selectSquare("d8") class="wsqr square"></td>
+		<td id="e8" onclick = selectSquare("e8") class="bsqr square"></td>
+		<td id="f8" onclick = selectSquare("f8") class="wsqr square"></td>
+		<td id="g8" onclick = selectSquare("g8") class="bsqr square"></td>
+		<td id="h8" onclick = selectSquare("h8") class="wsqr square"></td>
 	  </tr>  
 	  <tr>
-		<td id="a7" onclick = selectSquare("a7") class="whitesquare"></td>
-		<td id="b7" onclick = selectSquare("b7") class="blacksquare"></td>
-		<td id="c7" onclick = selectSquare("c7") class="whitesquare"></td>
-		<td id="d7" onclick = selectSquare("d7") class="blacksquare"></td>
-		<td id="e7" onclick = selectSquare("e7") class="whitesquare"></td>
-		<td id="f7" onclick = selectSquare("f7") class="blacksquare"></td>
-		<td id="g7" onclick = selectSquare("g7") class="whitesquare"></td>
-		<td id="h7" onclick = selectSquare("h7") class="blacksquare"></td>
+		<td id="a7" onclick = selectSquare("a7") class="wsqr square"></td>
+		<td id="b7" onclick = selectSquare("b7") class="bsqr square"></td>
+		<td id="c7" onclick = selectSquare("c7") class="wsqr square"></td>
+		<td id="d7" onclick = selectSquare("d7") class="bsqr square"></td>
+		<td id="e7" onclick = selectSquare("e7") class="wsqr square"></td>
+		<td id="f7" onclick = selectSquare("f7") class="bsqr square"></td>
+		<td id="g7" onclick = selectSquare("g7") class="wsqr square"></td>
+		<td id="h7" onclick = selectSquare("h7") class="bsqr square"></td>
 	  </tr>  
 	  <tr>
-		<td id="a6" onclick = selectSquare("a6") class="blacksquare"></td>
-		<td id="b6" onclick = selectSquare("b6") class="whitesquare"></td>
-		<td id="c6" onclick = selectSquare("c6") class="blacksquare"></td>
-		<td id="d6" onclick = selectSquare("d6") class="whitesquare"></td>
-		<td id="e6" onclick = selectSquare("e6") class="blacksquare"></td>
-		<td id="f6" onclick = selectSquare("f6") class="whitesquare"></td>
-		<td id="g6" onclick = selectSquare("g6") class="blacksquare"></td>
-		<td id="h6" onclick = selectSquare("h6") class="whitesquare"></td>
+		<td id="a6" onclick = selectSquare("a6") class="bsqr square"></td>
+		<td id="b6" onclick = selectSquare("b6") class="wsqr square"></td>
+		<td id="c6" onclick = selectSquare("c6") class="bsqr square"></td>
+		<td id="d6" onclick = selectSquare("d6") class="wsqr square"></td>
+		<td id="e6" onclick = selectSquare("e6") class="bsqr square"></td>
+		<td id="f6" onclick = selectSquare("f6") class="wsqr square"></td>
+		<td id="g6" onclick = selectSquare("g6") class="bsqr square"></td>
+		<td id="h6" onclick = selectSquare("h6") class="wsqr square"></td>
 	  </tr>  
 	  <tr>
-		<td id="a5" onclick = selectSquare("a5") class="whitesquare"></td>
-		<td id="b5" onclick = selectSquare("b5") class="blacksquare"></td>
-		<td id="c5" onclick = selectSquare("c5") class="whitesquare"></td>
-		<td id="d5" onclick = selectSquare("d5") class="blacksquare"></td>
-		<td id="e5" onclick = selectSquare("e5") class="whitesquare"></td>
-		<td id="f5" onclick = selectSquare("f5") class="blacksquare"></td>
-		<td id="g5" onclick = selectSquare("g5") class="whitesquare"></td>
-		<td id="h5" onclick = selectSquare("h5") class="blacksquare"></td>
+		<td id="a5" onclick = selectSquare("a5") class="wsqr square"></td>
+		<td id="b5" onclick = selectSquare("b5") class="bsqr square"></td>
+		<td id="c5" onclick = selectSquare("c5") class="wsqr square"></td>
+		<td id="d5" onclick = selectSquare("d5") class="bsqr square"></td>
+		<td id="e5" onclick = selectSquare("e5") class="wsqr square"></td>
+		<td id="f5" onclick = selectSquare("f5") class="bsqr square"></td>
+		<td id="g5" onclick = selectSquare("g5") class="wsqr square"></td>
+		<td id="h5" onclick = selectSquare("h5") class="bsqr square"></td>
 	  </tr>  
 	  <tr>
-		<td id="a4" onclick = selectSquare("a4") class="blacksquare"></td>
-		<td id="b4" onclick = selectSquare("b4") class="whitesquare"></td>
-		<td id="c4" onclick = selectSquare("c4") class="blacksquare"></td>
-		<td id="d4" onclick = selectSquare("d4") class="whitesquare"></td>
-		<td id="e4" onclick = selectSquare("e4") class="blacksquare"></td>
-		<td id="f4" onclick = selectSquare("f4") class="whitesquare"></td>
-		<td id="g4" onclick = selectSquare("g4") class="blacksquare"></td>
-		<td id="h4" onclick = selectSquare("h4") class="whitesquare"></td>
+		<td id="a4" onclick = selectSquare("a4") class="bsqr square"></td>
+		<td id="b4" onclick = selectSquare("b4") class="wsqr square"></td>
+		<td id="c4" onclick = selectSquare("c4") class="bsqr square"></td>
+		<td id="d4" onclick = selectSquare("d4") class="wsqr square"></td>
+		<td id="e4" onclick = selectSquare("e4") class="bsqr square"></td>
+		<td id="f4" onclick = selectSquare("f4") class="wsqr square"></td>
+		<td id="g4" onclick = selectSquare("g4") class="bsqr square"></td>
+		<td id="h4" onclick = selectSquare("h4") class="wsqr square"></td>
 	  </tr>  
 	  <tr>
-		<td id="a3" onclick = selectSquare("a3") class="whitesquare"></td>
-		<td id="b3" onclick = selectSquare("b3") class="blacksquare"></td>
-		<td id="c3" onclick = selectSquare("c3") class="whitesquare"></td>
-		<td id="d3" onclick = selectSquare("d3") class="blacksquare"></td>
-		<td id="e3" onclick = selectSquare("e3") class="whitesquare"></td>
-		<td id="f3" onclick = selectSquare("f3") class="blacksquare"></td>
-		<td id="g3" onclick = selectSquare("g3") class="whitesquare"></td>
-		<td id="h3" onclick = selectSquare("h3") class="blacksquare"></td>
+		<td id="a3" onclick = selectSquare("a3") class="wsqr square"></td>
+		<td id="b3" onclick = selectSquare("b3") class="bsqr square"></td>
+		<td id="c3" onclick = selectSquare("c3") class="wsqr square"></td>
+		<td id="d3" onclick = selectSquare("d3") class="bsqr square"></td>
+		<td id="e3" onclick = selectSquare("e3") class="wsqr square"></td>
+		<td id="f3" onclick = selectSquare("f3") class="bsqr square"></td>
+		<td id="g3" onclick = selectSquare("g3") class="wsqr square"></td>
+		<td id="h3" onclick = selectSquare("h3") class="bsqr square"></td>
 	  </tr>  
 	  <tr>
-		<td id="a2" onclick = selectSquare("a2") class="blacksquare"></td>
-		<td id="b2" onclick = selectSquare("b2") class="whitesquare"></td>
-		<td id="c2" onclick = selectSquare("c2") class="blacksquare"></td>
-		<td id="d2" onclick = selectSquare("d2") class="whitesquare"></td>
-		<td id="e2" onclick = selectSquare("e2") class="blacksquare"></td>
-		<td id="f2" onclick = selectSquare("f2") class="whitesquare"></td>
-		<td id="g2" onclick = selectSquare("g2") class="blacksquare"></td>
-		<td id="h2" onclick = selectSquare("h2") class="whitesquare"></td>
+		<td id="a2" onclick = selectSquare("a2") class="bsqr square"></td>
+		<td id="b2" onclick = selectSquare("b2") class="wsqr square"></td>
+		<td id="c2" onclick = selectSquare("c2") class="bsqr square"></td>
+		<td id="d2" onclick = selectSquare("d2") class="wsqr square"></td>
+		<td id="e2" onclick = selectSquare("e2") class="bsqr square"></td>
+		<td id="f2" onclick = selectSquare("f2") class="wsqr square"></td>
+		<td id="g2" onclick = selectSquare("g2") class="bsqr square"></td>
+		<td id="h2" onclick = selectSquare("h2") class="wsqr square"></td>
 	  </tr>  
 	  <tr>
-		<td id="a1" onclick = selectSquare("a1") class="whitesquare"></td>
-		<td id="b1" onclick = selectSquare("b1") class="blacksquare"></td>
-		<td id="c1" onclick = selectSquare("c1") class="whitesquare"></td>
-		<td id="d1" onclick = selectSquare("d1") class="blacksquare"></td>
-		<td id="e1" onclick = selectSquare("e1") class="whitesquare"></td>
-		<td id="f1" onclick = selectSquare("f1") class="blacksquare"></td>
-		<td id="g1" onclick = selectSquare("g1") class="whitesquare"></td>
-		<td id="h1" onclick = selectSquare("h1") class="blacksquare"></td>
+		<td id="a1" onclick = selectSquare("a1") class="wsqr square"></td>
+		<td id="b1" onclick = selectSquare("b1") class="bsqr square"></td>
+		<td id="c1" onclick = selectSquare("c1") class="wsqr square"></td>
+		<td id="d1" onclick = selectSquare("d1") class="bsqr square"></td>
+		<td id="e1" onclick = selectSquare("e1") class="wsqr square"></td>
+		<td id="f1" onclick = selectSquare("f1") class="bsqr square"></td>
+		<td id="g1" onclick = selectSquare("g1") class="wsqr square"></td>
+		<td id="h1" onclick = selectSquare("h1") class="bsqr square"></td>
 	  </tr>
 	</table>
 
