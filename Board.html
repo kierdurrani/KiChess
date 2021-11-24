@@ -145,21 +145,21 @@
 			findAllMovesInLine(1,0);
 			findAllMovesInLine(0,-1);
 			findAllMovesInLine(-1,0);
-
+			// TODO, disable castling after a rook moves.
 		}
 		if( piece == 'N' || piece == 'n' ){  
 			
 			var allCoords = [transCoords(coord, 1, 2), transCoords(coord, 1, -2), transCoords(coord, -1, 2), transCoords(coord, -1, -2),	
-				transCoords(coord, 2, 1), transCoords(coord, 2, -1), transCoords(coord, -2, 1), transCoords(coord, -2, -1) ];
+							 transCoords(coord, 2, 1), transCoords(coord, 2, -1), transCoords(coord, -2, 1), transCoords(coord, -2, -1) ];
 			
 			for(var possCoords of allCoords){
-				// Possible null value error here..
-				if( !possCoords ){ continue; }
+				if( !possCoords ){ continue; } // Catch possible null value error here..
 				if( (getPiece(possCoords) == '_') || isEnemyPiece(getPiece(possCoords)) ){
 					CandidateLegalMoves[possCoords] = { gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), possCoords, piece) };
 				}		
 			}
 		} 
+		
 		if( piece == 'B' || piece == 'b' ){  
 
 			findAllMovesInLine(+1,+1);
@@ -167,9 +167,10 @@
 			findAllMovesInLine(-1,+1);	
 			findAllMovesInLine(-1,-1);
 		} 
+		
 		if( piece == 'K' || piece == 'k' ){  
 			var allCoords = [transCoords(coord, 1, 1), transCoords(coord, 1, 0), transCoords(coord, 1, -1), transCoords(coord, 0, 1),	
-				transCoords(coord, 0, -1), transCoords(coord, -1, -1), transCoords(coord, -1, 0), transCoords(coord, -1, 1) ];
+						transCoords(coord, 0, -1), transCoords(coord, -1, -1), transCoords(coord, -1, 0), transCoords(coord, -1, 1) ];
 				
 			for(var possCoords of allCoords){
 				// Possible null value error here..
@@ -225,22 +226,33 @@
 						CandidateLegalMoves[newCoords] = { gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece), extendedStateChange : {EnpassanablePawn: transCoords(coord, 0, direction * 1)}};
 					}	
 				}
-
 			}			
 			
-			// Pawn can take diagonally
+			// Pawn can take diagonally - and enpassant
 			newCoords = transCoords(coord, 1, direction * 1);
-			if(  newCoords && (isEnemyPiece(getPiece(newCoords)) || (newCoords === extendedState.EnpassanablePawn)) ){
-				var promotion = newCoords.match('.8') || newCoords.match('.1');
+			if(  newCoords && (isEnemyPiece(getPiece(newCoords)) || (newCoords === extendedState.EnpassanablePawn)) )
+			{
+				var promotion = newCoords.match('.8') || newCoords.match('.1'); // promotion is "true" if pawn reaches last rank.
 				CandidateLegalMoves[newCoords] = { gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece), promotion: promotion };
+				
+				// In the event of en-passant, also need to remove the other pawn 
 				if(newCoords === extendedState.EnpassanablePawn){
-					CandidateLegalMoves[newCoords].gamestate = calculateBoardState(CandidateLegalMoves[newCoords].gamestate, extendedState.EnpassanablePawn, '_');
+					var pawnToDeleteCoords =  transCoords(extendedState.EnpassanablePawn, 0, (-direction)*1 );
+					CandidateLegalMoves[newCoords].gamestate = calculateBoardState(CandidateLegalMoves[newCoords].gamestate, pawnToDeleteCoords , '_');
 				}
 			}
+			
 			newCoords = transCoords(coord, -1, direction * 1);
-			if(  newCoords && (isEnemyPiece(getPiece(newCoords)) || (newCoords === extendedState.EnpassanablePawn) ) ){
+			if(  newCoords && (isEnemyPiece(getPiece(newCoords)) || (newCoords === extendedState.EnpassanablePawn) ) )
+			{
 				var promotion = newCoords.match('.8') || newCoords.match('.1');
 				CandidateLegalMoves[newCoords] = { gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece), promotion: promotion };
+				
+				// In the event of en-passant, also need to remove the other pawn 
+				if(newCoords === extendedState.EnpassanablePawn){
+					var pawnToDeleteCoords =  transCoords(extendedState.EnpassanablePawn, 0, (-direction)*1 );
+					CandidateLegalMoves[newCoords].gamestate = calculateBoardState(CandidateLegalMoves[newCoords].gamestate, pawnToDeleteCoords , '_');
+				}
 			}		
 		 } 
 		 
@@ -272,6 +284,7 @@
 			}
 	
 		}	
+		
 		
 		// TODO:
 	}
@@ -334,26 +347,21 @@
 				// gamestate = calculateBoardState(gamestate, coord, getPiece(previouslySelectedSquare));
 				// gamestate = calculateBoardState(gamestate, previouslySelectedSquare, "_");
 				gamestate = legalMoves[coord].gamestate;
-				if( legalMoves[coord].extendedStateChange ){
 				
-				
-				}
-				
+				extendedState['EnpassanablePawn'] = false;
 				for (const property in legalMoves[coord].extendedStateChange) {
 
-					// key: the name of the object key
-					// index: the ordinal position of the key within the object 
+					// iterate over all properties $key of the object
 					console.log("setting property " + property + " to value: " +  legalMoves[coord].extendedStateChange[property])
 					extendedState[property] = legalMoves[coord].extendedStateChange[property];
-				}
-				
+				}			
 				
 				renderBoard(gamestate);
 				
 				extendedState.isWhitesTurn = !(extendedState.isWhitesTurn);
 				previouslySelectedSquare = null;
 				
-				// TODO: SPECIAL MOVES - En-Passant, Promotion, Castling:
+				// TODO: Pawn Promotion
 				
 				
 				
