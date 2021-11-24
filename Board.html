@@ -52,10 +52,11 @@
 	var gamestate = "________;________;________;________;________;________;________;________;";
 	var extendedState = {
 		"isWhitesTurn": true,
-		"whiteACastleable": true,
-		"whiteHCastleable": true,
-		"blackACastleable": true,
-		"blackHCastleable": true,
+		// represent allowed castling options:
+		"a1": true,
+		"h1": true,
+		"a8": true,
+		"h8": true,
 		"EnpassanablePawn": false,
 		"StateRepetitionCounter": {}
 	}
@@ -145,7 +146,18 @@
 			findAllMovesInLine(1,0);
 			findAllMovesInLine(0,-1);
 			findAllMovesInLine(-1,0);
-			// TODO, disable castling after a rook moves.
+			
+			// Disable castling after a rook moves.
+			if( ['a1','a8','h1','h8'].includes(coord) ){ // indicates rook has moved from starting square (or is in some other rooks square, which doesnt matter)
+				console.log("MOVING ROOK FROM START");
+				Object.keys(CandidateLegalMoves).forEach(function (movelocation) {	
+					var disabledCastling = {};
+					disabledCastling[coord] = false;
+					
+					CandidateLegalMoves[movelocation]['extendedStateChange'] = disabledCastling;
+					console.log(CandidateLegalMoves[movelocation]);
+				})
+			}
 		}
 		if( piece == 'N' || piece == 'n' ){  
 			
@@ -381,14 +393,14 @@
 		var startingState = "RNBKQBNR;PPPPPPPP;________;________;________;________;pppppppp;rnbkqbnr;"
 		extendedState =  {
 			"isWhitesTurn": true,
-			"whiteACastleable": true,
-			"whiteHCastleable": true,
-			"blackACastleable": true,
-			"blackHCastleable": true,
+			// represent allowed castling options:
+			"a1": true,
+			"h1": true,
+			"a8": true,
+			"h8": true,
 			"EnpassanablePawn": false,
 			"StateRepetitionCounter": {}
 		}
-		
 		gamestate = startingState;
 		renderBoard(startingState);
 
