@@ -36,18 +36,18 @@
 		left: 0;
 	}
 
+	.wsqr {
+		background-color: #ffffb0;
+	}
+	
 	.bsqr {
 		background-color: #5c3f2e;
 	}
 
-	.wsqr {
-		background-color: #ffffb0;
-	}
 
 </style>
 
 <script type="text/javascript">
-
 
 	var gamestate = "________;________;________;________;________;________;________;________;";
 	var extendedState = {
@@ -59,8 +59,7 @@
 		"h8": true,
 		"EnpassanablePawn": false,
 		"StateRepetitionCounter": {}
-	}
-	
+	}	
 	var gameMetaData = {
 		"isWhiteHuman": true,
 		"isBlackHuman": true,
@@ -74,27 +73,142 @@
 		var rowNumber = Number(coord[1]); 
 		
 		var position = 9 * (8 - rowNumber) + colNumber - 1;
-		
-		console.log("colIndex: " + colNumber + " rowNumber: " + rowNumber );
+			
 		return( state.substring(0, position) + piece + state.substring(position + 1) );
-		console.log(gamestate);
-		
-		// renderBoard(gamestate);
 	}
+	
+	function transCoords(coord, y, x){
+		var newRank = coord[0].charCodeAt(0) - 96 + y; 
+		var newCol  = Number(coord[1]) + x;
+
+		if ( newCol < 1 ||  newCol > 8 ||  newRank < 1 || newRank > 8){
+			return null; // off the board
+		}else{
+			 return(String.fromCharCode(newRank + 96) + newCol);
+		}
+	}
+	
+	function amIInCheck(board, isWhiteTeam)
+	{	
+		// Overview of logic: start from the king and see if the king is in vision by an enemy piece
+		// team == true -> white 
 		
+		// Get coordinates of the king.
+		var kingIndex = isWhiteTeam ? board.indexOf('k') : board.indexOf('K'); // position of king in string
+		console.log("index: " + kingIndex);
+		
+		var letterCoord =  (kingIndex % 9) + 1 ;
+		var numberCoord =  (8 -  Math.floor(kingIndex / 9));
+		var kingsCoords = String.fromCharCode(letterCoord + 96) + numberCoord;
+		console.log("I think the king is at: " + kingsCoords);
+
+		function getPiece2(board, coordinate){
+
+			var columnIndex = coordinate[0].charCodeAt(0) - 97; // Col is given by leading letter. This formula converts a char into its corresponding integer from 0-7
+			var rowContents = board.split(";")[8 - coordinate[1]]; // Rows are enumerated 'backwards' in the gamestate to the coords.
+			
+			var cellContent = rowContents[columnIndex];      
+			
+			return cellContent;
+		}
+
+		// Return the coordinates of an ENEMY PIECE (if any), at the end of the line (x,y) diagonal from startingCoord
+		function getVisibleEnemyPiece(board, startingCoord, x, y){
+
+			var iter = 1;
+			var newCoords = transCoords(startingCoord, x * iter, y * iter);
+			while( newCoords ){
+				if(getPiece2(board, newCoords) !== '_'){
+				
+					var visiblePiece = getPiece2(board, newCoords);
+					
+					var isWhitePiece = (visiblePiece === visiblePiece.toLowerCase());
+					var isEnemyPiece = !(isWhitePiece === isWhiteTeam);
+					
+					if(isEnemyPiece){
+						return {piece: visiblePiece, coords: newCoords};
+					}else{
+						return null;
+					}
+				}
+				iter++;
+				newCoords = transCoords(kingsCoords, x * iter, y * iter);
+			}	
+			return null;
+		}
+		
+
+		// Evaluate Threats:
+		
+		// Threatened on diagonals:
+		var allVisibleDiagonals = [getVisibleEnemyPiece(board, kingsCoords, +1, +1), getVisibleEnemyPiece(board, kingsCoords, +1, -1), 
+								   getVisibleEnemyPiece(board, kingsCoords, -1, +1), getVisibleEnemyPiece(board, kingsCoords, -1, -1)];		
+		for( var visibleEnemy of allVisibleDiagonals){
+			if( !visibleEnemy ){ continue; } // Catch possible null value error here..
+			if( ['b','B','q','Q'].includes(visibleEnemy.piece) ){ return visibleEnemy.coords }
+		}
+		
+		// Threats vertically / horizontally
+		var allVisibleDiagonals = [getVisibleEnemyPiece(board, kingsCoords, +1, 0), getVisibleEnemyPiece(board, kingsCoords, 0, -1), 
+								   getVisibleEnemyPiece(board, kingsCoords, -1, 0), getVisibleEnemyPiece(board, kingsCoords, 0, +1)];		
+		for( var visibleEnemy of allVisibleDiagonals){
+			if( !visibleEnemy ){ continue; } // Catch possible null value error here..
+			if( ['r','R','q','Q'].includes(visibleEnemy.piece) ){ return visibleEnemy.coords }
+		}
+		
+		// Threats from Pawns:
+		var directionOfThreateningPawn = (isWhiteTeam ? 1 : -1 );
+		
+		if(isWhiteTeam){
+			if( transCoords(kingsCoords, +1,  +1) && getPiece2(board, transCoords(kingsCoords, +1,  +1)) === 'P'){ return transCoords(kingsCoords, +1,  +1)} ;
+			if( transCoords(kingsCoords, -1,  +1) && getPiece2(board, transCoords(kingsCoords, -1,  +1)) === 'P'){ return transCoords(kingsCoords, -1,  +1)} ;
+		}else{
+			if( transCoords(kingsCoords, +1,  -1) && getPiece2(board, transCoords(kingsCoords, +1,  -1)) === 'p'){ return transCoords(kingsCoords, +1,  -1)} ;
+			if( transCoords(kingsCoords, -1,  -1) && getPiece2(board, transCoords(kingsCoords, -1,  -1)) === 'p'){ return transCoords(kingsCoords, -1,  -1)} ;
+		}
+
+		
+		// Threats from knights:
+		var possibleKnightCoords = [transCoords(kingsCoords, +1,  +2), transCoords(kingsCoords, +1,  -2), 
+									transCoords(kingsCoords, -1,  +2), transCoords(kingsCoords, -1,  -2), 
+									transCoords(kingsCoords, +2,  +1), transCoords(kingsCoords, +2,  -1), 
+									transCoords(kingsCoords, -2,  +1), transCoords(kingsCoords, -2,  -1)];		
+		for( var possCoords of possibleKnightCoords){
+			if( !possCoords ){ continue; } // Catch possible null value error here..
+			
+			 
+			if(  isWhiteTeam   && (getPiece2(board, possCoords) === 'N') ){ return possCoords } 
+			if( (!isWhiteTeam) && (getPiece2(board, possCoords) === 'n') ){ return possCoords } 
+
+		}
+		
+		// Finally, threats from king!
+		var allCoords = [transCoords(kingsCoords, +1, +1), transCoords(kingsCoords, +1, +0), transCoords(kingsCoords, +1, -1), transCoords(kingsCoords, +0, +1),	
+						 transCoords(kingsCoords, +0, -1), transCoords(kingsCoords, -1, -1), transCoords(kingsCoords, -1, +0), transCoords(kingsCoords, -1, +1) ];
+
+		for(var possCoords of allCoords)
+		{ 
+			if( !possCoords ){ continue; }
+			if( (getPiece2(board, possCoords) === 'K') || (getPiece2(board, possCoords) === 'k') ){
+				return possCoords;
+			}
+		}
+		
+		// else
+		return false;
+	}
 	
 	function getLegalMoves(coord){
-	
-		
+			
 		var piece = getPiece(coord);
 		var CandidateLegalMoves = {};
-		
-		// Assume that enpassanable will be no unless specified.
-		// CandidateLegalMoves[newCoords] = {gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece), extendedStateChange : {"EnpassanablePawn": 'h1'}, promotion: true};
 		
 		// Logic works as follows:
 		// A hash table called CandidateLegalMoves with keys of the coordinate you click on to make the move is defined.
 		// The hash table contains an object with properties: gamestate = string rep of the board
+		// Assume that enpassanable will be no unless specified.
+		// Example:
+		// CandidateLegalMoves[newCoords] = {gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece), extendedStateChange : {"EnpassanablePawn": 'h1'}, promotion: true};
 
 		// Auxillary functions:
 		function isEnemyPiece(piece){
@@ -103,21 +217,7 @@
 			var isWhitePiece  = (piece == piece.toLowerCase());
 			return !(isWhitePiece === extendedState.isWhitesTurn);
 		}
-	
-		function transCoords(coord, y, x){
-			var newRank = coord[0].charCodeAt(0) - 96 + y; 
-			var newCol  = Number(coord[1]) + x;
-
-			if ( newCol < 1 ||  newCol > 8 ||  newRank < 1 || newRank > 8){
-				return null; // off the board
-			}else{
-				 return(String.fromCharCode(newRank + 96) + newCol);
-			}
-		}		
-
-		function amIInCheck(){
-			// TODO
-		}
+		
 		
 		function findAllMovesInLine(x,y){
 			var iter = 1;
@@ -135,14 +235,13 @@
 				}
 				iter++;
 				newCoords = transCoords(coord,x * iter, y * iter);
-				
 			}
 		}
 
 		/////////////////////////////	MAIN LOGIC	///////////////////////////////////
-		if( piece == 'R' || piece == 'r' ){  
-			
-			findAllMovesInLine(0,1);
+		if( piece == 'R' || piece == 'r' ){  		
+		
+		findAllMovesInLine(0,1);
 			findAllMovesInLine(1,0);
 			findAllMovesInLine(0,-1);
 			findAllMovesInLine(-1,0);
@@ -170,16 +269,14 @@
 					CandidateLegalMoves[possCoords] = { gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), possCoords, piece) };
 				}		
 			}
-		} 
-		
+		} 	
 		if( piece == 'B' || piece == 'b' ){  
 
 			findAllMovesInLine(+1,+1);
 			findAllMovesInLine(+1,-1);
 			findAllMovesInLine(-1,+1);	
 			findAllMovesInLine(-1,-1);
-		} 
-		
+		}
 		if( piece == 'K' || piece == 'k' ){  
 			var allCoords = [transCoords(coord, 1, 1), transCoords(coord, 1, 0), transCoords(coord, 1, -1), transCoords(coord, 0, 1),	
 						transCoords(coord, 0, -1), transCoords(coord, -1, -1), transCoords(coord, -1, 0), transCoords(coord, -1, 1) ];
@@ -192,17 +289,38 @@
 					// Moving the king prevents castling
 					var extendedStateChange = {}
 					if( piece == 'k' ){  
-						extendedStateChange['whiteACastleable'] = false;
-						extendedStateChange['whiteHCastleable'] = false;
+						extendedStateChange['a1'] = false;
+						extendedStateChange['a8'] = false;
 					}
 					if( piece == 'K'){
-						extendedStateChange['blackACastleable'] = false;
-						extendedStateChange['blackACastleable'] = false;
+						extendedStateChange['h1'] = false;
+						extendedStateChange['h8'] = false;
 					}
 					CandidateLegalMoves[possCoords] = { gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), possCoords, piece), extendedStateChange : extendedStateChange };
 				}		
 			}
-			// TODO: Castling rules
+			
+			// Castling:
+			if( piece === 'k'){
+				if(extendedState['a1']){
+					if( (getPiece('a2')==='_') && (getPiece('a3')==='_') ){
+						// TODO: Confirm king does not go through check 
+						
+
+					}
+				}
+				if(extendedState['a8']){
+					
+				}
+			}else{
+				if(extendedState['h1']){
+					
+				}
+				if(extendedState['h8']){
+					
+				}
+			}
+
 			
 		} 
 		if( piece == 'Q' || piece == 'q' ){  
@@ -214,8 +332,7 @@
 			findAllMovesInLine(1,0);
 			findAllMovesInLine(0,-1);
 			findAllMovesInLine(-1,0);
-		} 
-		
+		} 		
 		if( piece === 'p' || piece === 'P' ){ 
 			
 			var direction = 1;
@@ -266,12 +383,20 @@
 					CandidateLegalMoves[newCoords].gamestate = calculateBoardState(CandidateLegalMoves[newCoords].gamestate, pawnToDeleteCoords , '_');
 				}
 			}		
-		 } 
-		 
+		 } 		 
 		if( piece == '_'){
+			previouslySelectedSquare = null;
 			throw "This should not be possible - trying to move an empty square"
 		}
+		
 		// TODO: Validate not in checks
+		for (const move of Object.keys(CandidateLegalMoves)){ 
+		
+			if(amIInCheck( CandidateLegalMoves[move].gamestate, extendedState.isWhitesTurn)){
+				delete CandidateLegalMoves[move];
+			}
+		}
+		
 		return CandidateLegalMoves;
 			
 	}
@@ -286,29 +411,22 @@
 		for (const move of Object.keys(legalMoves)) {	
 			var newSquare = document.getElementById(move);
 			
-			console.log("move: " + move )
 			if(getPiece(move) !== "_")
 			{
 				newSquare.innerHTML += '<img src="assets/TakePiece.png" class="overlay" height = 97px width = 97px  >'; 
 			}else{
 				newSquare.innerHTML += '<img src="assets/MovePiece.png" class="overlay" height = 97px width = 97px  >'; 
 				// TODO: special cases of castling and en-passant
-			}
-	
+			}	
 		}	
-		
-		
-		// TODO:
 	}
 	
 	function getPiece(coordinate){
 
-		var columnIndex = coordinate[0].charCodeAt(0) - 97; // Col is given by leading letter. Convert this to integer from 0-7
-		var columnState = gamestate.split(";")[8 - coordinate[1]]; 
+		var columnIndex = coordinate[0].charCodeAt(0) - 97; // Col is given by leading letter. This formula converts a char into its corresponding integer from 0-7
+		var rowContents = gamestate.split(";")[8 - coordinate[1]]; // Rows are enumerated 'backwards' in the gamestate to the coords.
 		
-		var cellContent = columnState[columnIndex];      
-		
-		// console.log("At coordinate: " + coordinate + " there is a " + cellContent );
+		var cellContent = rowContents[columnIndex];      
 		
 		return cellContent;
 	}
@@ -358,6 +476,8 @@
 				
 				// gamestate = calculateBoardState(gamestate, coord, getPiece(previouslySelectedSquare));
 				// gamestate = calculateBoardState(gamestate, previouslySelectedSquare, "_");
+				
+				
 				gamestate = legalMoves[coord].gamestate;
 				
 				extendedState['EnpassanablePawn'] = false;
@@ -390,7 +510,7 @@
 	
 	function startGame(){
 		// Caps is black, lower case for white pieces. N = knight, K = king.
-		var startingState = "RNBKQBNR;PPPPPPPP;________;________;________;________;pppppppp;rnbkqbnr;"
+		var startingState = "RNBQKBNR;PPPPPPPP;________;________;________;________;pppppppp;rnbqkbnr;"
 		extendedState =  {
 			"isWhitesTurn": true,
 			// represent allowed castling options:
@@ -406,9 +526,9 @@
 
 	}
 	
-	function renderBoard(startingState){
+	function renderBoard(state){
 	
-		var rows = startingState.split(';');
+		var rows = state.split(';');
 		
 		var chessBoard = document.getElementsByClassName("square");
 		
@@ -435,90 +555,105 @@
 				x++
 			}
 		}
+		
+		var isInCheck = amIInCheck(state, !extendedState.isWhitesTurn);
+		if(isInCheck){
+			// Get Location of the King:
+			var kingIndex = (!extendedState.isWhitesTurn) ? gamestate.indexOf('k') : gamestate.indexOf('K'); 
+			var letterCoord =  (kingIndex % 9) + 1 ;
+			var numberCoord =  (8 -  Math.floor(kingIndex / 9));
+			var kingsCoords = String.fromCharCode(letterCoord + 96) + numberCoord;
+			
+			var checkSquare =  document.getElementById(kingsCoords);
+			checkSquare.innerHTML = '<img src="assets/Check.png" class="overlay" height = 97px width = 97px, style = "opacity: 1"  >' +  checkSquare.innerHTML ;
+			
+			var checkSquare2 =  document.getElementById(isInCheck);
+			checkSquare2.innerHTML = '<img src="assets/Check.png" class="overlay" height = 97px width = 97px  >' +  checkSquare2.innerHTML ;
+		}
 	}
 
 </script>
 <body>	
 	<table id = "chessboard">
 	  <tr>
-		<td id="a8" onclick = selectSquare("a8") class="bsqr square"></td>
-		<td id="b8" onclick = selectSquare("b8") class="wsqr square"></td>
-		<td id="c8" onclick = selectSquare("c8") class="bsqr square"></td>
-		<td id="d8" onclick = selectSquare("d8") class="wsqr square"></td>
-		<td id="e8" onclick = selectSquare("e8") class="bsqr square"></td>
-		<td id="f8" onclick = selectSquare("f8") class="wsqr square"></td>
-		<td id="g8" onclick = selectSquare("g8") class="bsqr square"></td>
-		<td id="h8" onclick = selectSquare("h8") class="wsqr square"></td>
+		<td id="a8" onclick = selectSquare("a8") class="wsqr square">a8</td>
+		<td id="b8" onclick = selectSquare("b8") class="bsqr square"></td>
+		<td id="c8" onclick = selectSquare("c8") class="wsqr square"></td>
+		<td id="d8" onclick = selectSquare("d8") class="bsqr square"></td>
+		<td id="e8" onclick = selectSquare("e8") class="wsqr square"></td>
+		<td id="f8" onclick = selectSquare("f8") class="bsqr square"></td>
+		<td id="g8" onclick = selectSquare("g8") class="wsqr square"></td>
+		<td id="h8" onclick = selectSquare("h8") class="bsqr square"></td>
 	  </tr>  
 	  <tr>
-		<td id="a7" onclick = selectSquare("a7") class="wsqr square"></td>
-		<td id="b7" onclick = selectSquare("b7") class="bsqr square"></td>
-		<td id="c7" onclick = selectSquare("c7") class="wsqr square"></td>
-		<td id="d7" onclick = selectSquare("d7") class="bsqr square"></td>
-		<td id="e7" onclick = selectSquare("e7") class="wsqr square"></td>
-		<td id="f7" onclick = selectSquare("f7") class="bsqr square"></td>
-		<td id="g7" onclick = selectSquare("g7") class="wsqr square"></td>
-		<td id="h7" onclick = selectSquare("h7") class="bsqr square"></td>
+		<td id="a7" onclick = selectSquare("a7") class="bsqr square"></td>
+		<td id="b7" onclick = selectSquare("b7") class="wsqr square"></td>
+		<td id="c7" onclick = selectSquare("c7") class="bsqr square"></td>
+		<td id="d7" onclick = selectSquare("d7") class="wsqr square"></td>
+		<td id="e7" onclick = selectSquare("e7") class="bsqr square"></td>
+		<td id="f7" onclick = selectSquare("f7") class="wsqr square"></td>
+		<td id="g7" onclick = selectSquare("g7") class="bsqr square"></td>
+		<td id="h7" onclick = selectSquare("h7") class="wsqr square"></td>
 	  </tr>  
 	  <tr>
-		<td id="a6" onclick = selectSquare("a6") class="bsqr square"></td>
-		<td id="b6" onclick = selectSquare("b6") class="wsqr square"></td>
-		<td id="c6" onclick = selectSquare("c6") class="bsqr square"></td>
-		<td id="d6" onclick = selectSquare("d6") class="wsqr square"></td>
-		<td id="e6" onclick = selectSquare("e6") class="bsqr square"></td>
-		<td id="f6" onclick = selectSquare("f6") class="wsqr square"></td>
-		<td id="g6" onclick = selectSquare("g6") class="bsqr square"></td>
-		<td id="h6" onclick = selectSquare("h6") class="wsqr square"></td>
+		<td id="a6" onclick = selectSquare("a6") class="wsqr square"></td>
+		<td id="b6" onclick = selectSquare("b6") class="bsqr square"></td>
+		<td id="c6" onclick = selectSquare("c6") class="wsqr square"></td>
+		<td id="d6" onclick = selectSquare("d6") class="bsqr square"></td>
+		<td id="e6" onclick = selectSquare("e6") class="wsqr square"></td>
+		<td id="f6" onclick = selectSquare("f6") class="bsqr square"></td>
+		<td id="g6" onclick = selectSquare("g6") class="wsqr square"></td>
+		<td id="h6" onclick = selectSquare("h6") class="bsqr square"></td>
 	  </tr>  
 	  <tr>
-		<td id="a5" onclick = selectSquare("a5") class="wsqr square"></td>
-		<td id="b5" onclick = selectSquare("b5") class="bsqr square"></td>
-		<td id="c5" onclick = selectSquare("c5") class="wsqr square"></td>
-		<td id="d5" onclick = selectSquare("d5") class="bsqr square"></td>
-		<td id="e5" onclick = selectSquare("e5") class="wsqr square"></td>
-		<td id="f5" onclick = selectSquare("f5") class="bsqr square"></td>
-		<td id="g5" onclick = selectSquare("g5") class="wsqr square"></td>
-		<td id="h5" onclick = selectSquare("h5") class="bsqr square"></td>
+		<td id="a5" onclick = selectSquare("a5") class="bsqr square"></td>
+		<td id="b5" onclick = selectSquare("b5") class="wsqr square"></td>
+		<td id="c5" onclick = selectSquare("c5") class="bsqr square"></td>
+		<td id="d5" onclick = selectSquare("d5") class="wsqr square"></td>
+		<td id="e5" onclick = selectSquare("e5") class="bsqr square"></td>
+		<td id="f5" onclick = selectSquare("f5") class="wsqr square"></td>
+		<td id="g5" onclick = selectSquare("g5") class="bsqr square"></td>
+		<td id="h5" onclick = selectSquare("h5") class="wsqr square"></td>
 	  </tr>  
 	  <tr>
-		<td id="a4" onclick = selectSquare("a4") class="bsqr square"></td>
-		<td id="b4" onclick = selectSquare("b4") class="wsqr square"></td>
-		<td id="c4" onclick = selectSquare("c4") class="bsqr square"></td>
-		<td id="d4" onclick = selectSquare("d4") class="wsqr square"></td>
-		<td id="e4" onclick = selectSquare("e4") class="bsqr square"></td>
-		<td id="f4" onclick = selectSquare("f4") class="wsqr square"></td>
-		<td id="g4" onclick = selectSquare("g4") class="bsqr square"></td>
-		<td id="h4" onclick = selectSquare("h4") class="wsqr square"></td>
+		<td id="a4" onclick = selectSquare("a4") class="wsqr square"></td>
+		<td id="b4" onclick = selectSquare("b4") class="bsqr square"></td>
+		<td id="c4" onclick = selectSquare("c4") class="wsqr square"></td>
+		<td id="d4" onclick = selectSquare("d4") class="bsqr square"></td>
+		<td id="e4" onclick = selectSquare("e4") class="wsqr square"></td>
+		<td id="f4" onclick = selectSquare("f4") class="bsqr square"></td>
+		<td id="g4" onclick = selectSquare("g4") class="wsqr square"></td>
+		<td id="h4" onclick = selectSquare("h4") class="bsqr square"></td>
 	  </tr>  
 	  <tr>
-		<td id="a3" onclick = selectSquare("a3") class="wsqr square"></td>
-		<td id="b3" onclick = selectSquare("b3") class="bsqr square"></td>
-		<td id="c3" onclick = selectSquare("c3") class="wsqr square"></td>
-		<td id="d3" onclick = selectSquare("d3") class="bsqr square"></td>
-		<td id="e3" onclick = selectSquare("e3") class="wsqr square"></td>
-		<td id="f3" onclick = selectSquare("f3") class="bsqr square"></td>
-		<td id="g3" onclick = selectSquare("g3") class="wsqr square"></td>
-		<td id="h3" onclick = selectSquare("h3") class="bsqr square"></td>
+		<td id="a3" onclick = selectSquare("a3") class="bsqr square"></td>
+		<td id="b3" onclick = selectSquare("b3") class="wsqr square"></td>
+		<td id="c3" onclick = selectSquare("c3") class="bsqr square"></td>
+		<td id="d3" onclick = selectSquare("d3") class="wsqr square"></td>
+		<td id="e3" onclick = selectSquare("e3") class="bsqr square"></td>
+		<td id="f3" onclick = selectSquare("f3") class="wsqr square"></td>
+		<td id="g3" onclick = selectSquare("g3") class="bsqr square"></td>
+		<td id="h3" onclick = selectSquare("h3") class="wsqr square"></td>
 	  </tr>  
 	  <tr>
-		<td id="a2" onclick = selectSquare("a2") class="bsqr square"></td>
-		<td id="b2" onclick = selectSquare("b2") class="wsqr square"></td>
-		<td id="c2" onclick = selectSquare("c2") class="bsqr square"></td>
-		<td id="d2" onclick = selectSquare("d2") class="wsqr square"></td>
-		<td id="e2" onclick = selectSquare("e2") class="bsqr square"></td>
-		<td id="f2" onclick = selectSquare("f2") class="wsqr square"></td>
-		<td id="g2" onclick = selectSquare("g2") class="bsqr square"></td>
-		<td id="h2" onclick = selectSquare("h2") class="wsqr square"></td>
+		<td id="a2" onclick = selectSquare("a2") class="wsqr square"></td>
+		<td id="b2" onclick = selectSquare("b2") class="bsqr square"></td>
+		<td id="c2" onclick = selectSquare("c2") class="wsqr square"></td>
+		<td id="d2" onclick = selectSquare("d2") class="bsqr square"></td>
+		<td id="e2" onclick = selectSquare("e2") class="wsqr square"></td>
+		<td id="f2" onclick = selectSquare("f2") class="bsqr square"></td>
+		<td id="g2" onclick = selectSquare("g2") class="wsqr square"></td>
+		<td id="h2" onclick = selectSquare("h2") class="bsqr square"></td>
 	  </tr>  
 	  <tr>
-		<td id="a1" onclick = selectSquare("a1") class="wsqr square"></td>
-		<td id="b1" onclick = selectSquare("b1") class="bsqr square"></td>
-		<td id="c1" onclick = selectSquare("c1") class="wsqr square"></td>
-		<td id="d1" onclick = selectSquare("d1") class="bsqr square"></td>
-		<td id="e1" onclick = selectSquare("e1") class="wsqr square"></td>
-		<td id="f1" onclick = selectSquare("f1") class="bsqr square"></td>
-		<td id="g1" onclick = selectSquare("g1") class="wsqr square"></td>
-		<td id="h1" onclick = selectSquare("h1") class="bsqr square"></td>
+		<td id="a1" onclick = selectSquare("a1") class="bsqr square"></td>
+		<td id="b1" onclick = selectSquare("b1") class="wsqr square"></td>
+		<td id="c1" onclick = selectSquare("c1") class="bsqr square"></td>
+		<td id="d1" onclick = selectSquare("d1") class="wsqr square"></td>
+		<td id="e1" onclick = selectSquare("e1") class="bsqr square"></td>
+		<td id="f1" onclick = selectSquare("f1") class="wsqr square"></td>
+		<td id="g1" onclick = selectSquare("g1") class="bsqr square"></td>
+		<td id="h1" onclick = selectSquare("h1") class="wsqr square"></td>
 	  </tr>
 	</table>
 
