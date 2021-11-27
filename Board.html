@@ -302,22 +302,88 @@
 			
 			// Castling:
 			if( piece === 'k'){
+				
+				// White long (left) side castle.  king starts at E1, and moves to B1
 				if(extendedState['a1']){
-					if( (getPiece('a2')==='_') && (getPiece('a3')==='_') ){
-						// TODO: Confirm king does not go through check 
+					if( (getPiece('b1')==='_') && (getPiece('c1')==='_') && (getPiece('d1')==='_') ){ 
+						// king starts at E1, and moves to B1. Rook starts at A1 and finishes at B1
+						// Verify not initially in check, and all intermediate squares are not threatened.
+						if( ! amIInCheck(gamestate, extendedState.isWhitesTurn) ){
 						
-
+							var intState1 = calculateBoardState(calculateBoardState(gamestate, 'e1', '_'), 'd1', 'k');
+							if( !amIInCheck(intState1, extendedState.isWhitesTurn) ){
+								
+								var intState2 = calculateBoardState(calculateBoardState(intState1, 'd1', '_'), 'c1', 'k');
+								if( !amIInCheck(intState2, extendedState.isWhitesTurn) ){
+									
+									var intState3 = calculateBoardState(calculateBoardState(intState2, 'c1', '_'), 'b1', 'k'); // no need to check this state 
+									var finalState = calculateBoardState(calculateBoardState(intState3, 'a1', '_'), 'c1', 'r'); // This gets checked later
+									
+									CandidateLegalMoves['a1'] = { gamestate : finalState, extendedStateChange : {a1: false, h1: false} };
+								}
+							}
+						}
 					}
 				}
-				if(extendedState['a8']){
-					
+				
+				// White short (right) side castle. 
+				if(extendedState['h1']){
+					if( (getPiece('f1')==='_') && (getPiece('g1')==='_')  ){ 
+						// king starts at e1, and moves to g1. Rook starts at h1 and finishes at f1
+						// Verify not initially in check, and all intermediate squares are not threatened.
+						if( ! amIInCheck(gamestate, extendedState.isWhitesTurn) ){
+						
+							var intState1 = calculateBoardState(calculateBoardState(gamestate, 'e1', '_'), 'f1', 'k');
+							if( !amIInCheck(intState1, extendedState.isWhitesTurn) ){
+								
+								var intState2 = calculateBoardState(calculateBoardState(intState1, 'f1', '_'), 'g1', 'k'); // no need to check this state 
+								var finalState = calculateBoardState(calculateBoardState(intState2, 'h1', '_'), 'f1', 'r'); // This gets checked later
+								
+								CandidateLegalMoves['h1'] = { gamestate : finalState, extendedStateChange : {a1: false, h1: false} };
+							}
+						}
+					}
 				}
 			}else{
-				if(extendedState['h1']){
-					
+				// black long (left) side castle.  king starts at e8, and moves to b8
+				if(extendedState['a8']){
+					if( (getPiece('b8')==='_') && (getPiece('c8')==='_') && (getPiece('d8')==='_') ){ 
+						// king starts at E1, and moves to B1. Rook starts at A1 and finishes at B1
+						// Verify not initially in check, and all intermediate squares are not threatened.
+						if( ! amIInCheck(gamestate, extendedState.isWhitesTurn) ){
+						
+							var intState1 = calculateBoardState(calculateBoardState(gamestate, 'e8', '_'), 'd8', 'K');
+							if( !amIInCheck(intState1, extendedState.isWhitesTurn) ){
+								
+								var intState2 = calculateBoardState(calculateBoardState(intState1, 'd8', '_'), 'c8', 'K');
+								if( !amIInCheck(intState2, extendedState.isWhitesTurn) ){
+									
+									var intState3 = calculateBoardState(calculateBoardState(intState2, 'c8', '_'), 'b8', 'K'); // no need to check this state 
+									var finalState = calculateBoardState(calculateBoardState(intState3, 'a8', '_'), 'c8', 'R'); // This gets checked later
+									
+									CandidateLegalMoves['a8'] = { gamestate : finalState, extendedStateChange : {a8: false, h8: false} };
+								}
+							}
+						}
+					}
 				}
+				// black short (right) side castle. 
 				if(extendedState['h8']){
-					
+					if( (getPiece('f8')==='_') && (getPiece('g8')==='_')  ){ 
+						// king starts at e8, and moves to g8. Rook starts at h8 and finishes at f8
+						// Verify not initially in check, and all intermediate squares are not threatened.
+						if( ! amIInCheck(gamestate, extendedState.isWhitesTurn) ){
+						
+							var intState1 = calculateBoardState(calculateBoardState(gamestate, 'e8', '_'), 'f8', 'K');
+							if( !amIInCheck(intState1, extendedState.isWhitesTurn) ){
+								
+								var intState2 = calculateBoardState(calculateBoardState(intState1, 'f8', '_'), 'g8', 'K'); // no need to check this state 
+								var finalState = calculateBoardState(calculateBoardState(intState2, 'h8', '_'), 'f8', 'R'); // This gets checked later
+								
+								CandidateLegalMoves['h8'] = { gamestate : finalState, extendedStateChange : {a8: false, h8: false} };
+							}
+						}
+					}
 				}
 			}
 
@@ -389,9 +455,8 @@
 			throw "This should not be possible - trying to move an empty square"
 		}
 		
-		// TODO: Validate not in checks
+		// Validate moves are not in checks
 		for (const move of Object.keys(CandidateLegalMoves)){ 
-		
 			if(amIInCheck( CandidateLegalMoves[move].gamestate, extendedState.isWhitesTurn)){
 				delete CandidateLegalMoves[move];
 			}
