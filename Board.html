@@ -31,6 +31,15 @@
 		border: 2px solid ;
 		border-color: #000000;
 		display: none;
+	}	
+	
+	#promotionOverlayBlack{
+		position: absolute;
+		top: 110px;
+		left: 200px;
+		border: 2px solid ;
+		border-color: #000000;
+		display: none;
 	}
 	
 	.promo{
@@ -526,7 +535,7 @@
 	
 		console.log("clicked on " + coord);
 		if(promotionContext){
-			// TODO: confirm correcteness
+			// Close the pawn promotion window if player clicks off it.
 			document.getElementById('chessboard').style.opacity = 1.0;
 			document.getElementById('promotionOverlay').style.display = 'none';
 			promotionContext = false;
@@ -570,19 +579,17 @@
 			
 			if(legalMoves[coord]){
 				
-				// Process Move
-				
-				// gamestate = calculateBoardState(gamestate, coord, getPiece(previouslySelectedSquare));
-				// gamestate = calculateBoardState(gamestate, previouslySelectedSquare, "_");
-				
-				
-				// TODO: Pawn Promotion
 				if(legalMoves[coord].promotion){
-					promotionContext = true;
-					document.getElementById('promotionOverlay').style.display = 'block';
 					
+					promotionContext = previouslySelectedSquare + ';' + coord;
 					document.getElementById('chessboard').style.opacity = 0.3;
 					
+					// Show pawn promotion window
+					if(extendedState.isWhitesTurn){
+						document.getElementById('promotionOverlay').style.display = 'block';
+					}else{
+						document.getElementById('promotionOverlayBlack').style.display = 'block';
+					}
 				}
 				
 				// Update gamestate and gameextended state.
@@ -677,6 +684,21 @@
 	
 	function promotePawn(newPiece){
 		
+		document.getElementById('chessboard').style.opacity = 1.0;
+		document.getElementById('promotionOverlay').style.display = 'none';
+		document.getElementById('promotionOverlayBlack').style.display = 'none';
+		
+		// Process Move
+		var previousPawnSquare = promotionContext.split(";")[0];
+		var newSquare = promotionContext.split(";")[1];
+		
+		console.log(previousPawnSquare);
+		gamestate = calculateBoardState(gamestate, newSquare, newPiece);
+		gamestate = calculateBoardState(gamestate, previousPawnSquare, "_");
+		
+		renderBoard(gamestate);
+
+		promotionContext = false;
 	}
 	
 </script>
@@ -768,10 +790,16 @@
 </body>
 <table >
 	<tr id = "promotionOverlay"; style='background-color: #ffffff'>
-		<td class="promo" onclick = promotePawn('n')><div><img src="assets/blackPieces/knight.png" style='position: relative' ></div></td>
-		<td class="promo" onclick = promotePawn('b')></div><img src="assets/blackPieces/bishop.png" style='position: relative'  ></div></td>
-		<td class="promo" onclick = promotePawn('r')> <img src="assets/blackPieces/rook.png" style='position: relative' ></td>
-		<td class="promo" onclick = promotePawn('q')> <img src="assets/blackPieces/queen.png" style='position: relative' ></td>
+		<td class="promo" onclick = promotePawn('n')> <img src="assets/whitePieces/knight.png" style='position: relative'> </td>
+		<td class="promo" onclick = promotePawn('b')> <img src="assets/whitePieces/bishop.png" style='position: relative'> </td>
+		<td class="promo" onclick = promotePawn('r')> <img src="assets/whitePieces/rook.png"   style='position: relative'> </td>
+		<td class="promo" onclick = promotePawn('q')> <img src="assets/whitePieces/queen.png"  style='position: relative'> </td>
+	</tr>	
+	<tr id = "promotionOverlayBlack"; style='background-color: #ffffff'>
+		<td class="promo" onclick = promotePawn('N')> <img src="assets/blackPieces/knight.png" style='position: relative'> </td>
+		<td class="promo" onclick = promotePawn('B')> <img src="assets/blackPieces/bishop.png" style='position: relative'> </td>
+		<td class="promo" onclick = promotePawn('R')> <img src="assets/blackPieces/rook.png"   style='position: relative'> </td>
+		<td class="promo" onclick = promotePawn('Q')> <img src="assets/blackPieces/queen.png"  style='position: relative'> </td>
 	</tr>
 </table>
 </html>
