@@ -4,9 +4,7 @@
 	<link rel="icon" href="assets/whitePieces/rook.png">
 </head>
 
-
 <style>
-
 	#chessBoard{
 		width: 800px;
 		height: 800px;
@@ -53,13 +51,10 @@
 		top: 0;
 		left: 0;
 	}
-
-	
-
 	
 	.overlay{
 		position: absolute;
-		opacity: 0.5;
+		opacity: 1;
 		top: 0;	
 		left: 0;
 		height: 100%;
@@ -167,7 +162,6 @@
 			return null;
 		}
 		
-
 		// Evaluate Threats:
 		
 		// Threatened on diagonals:
@@ -611,7 +605,10 @@
 				
 				
 			}else{
-				// Not a move. Instead, just select the new piece (via recursive call) 
+				// Given they had a previously selected piece, they have not selcted a legal move for that peice.
+				// Instead, just show the legal moves for that piece (via recursive call) 
+				// TODO: if you click the same square, deselect it.
+				
 				previouslySelectedSquare = null;
 				selectSquare(coord);
 			}
