@@ -33,7 +33,7 @@
 	
 	#promotionOverlayBlack{
 		position: absolute;
-		top: 110px;
+		top: 595px;
 		left: 200px;
 		border: 2px solid ;
 		border-color: #000000;
@@ -532,6 +532,7 @@
 			// Close the pawn promotion window if player clicks off it.
 			document.getElementById('chessboard').style.opacity = 1.0;
 			document.getElementById('promotionOverlay').style.display = 'none';
+			document.getElementById('promotionOverlayBlack').style.display = 'none';
 			promotionContext = false;
 		}
 		
@@ -584,6 +585,7 @@
 					}else{
 						document.getElementById('promotionOverlayBlack').style.display = 'block';
 					}
+					return;
 				}
 				
 				// Update gamestate and gameextended state.
@@ -694,7 +696,9 @@
 		gamestate = calculateBoardState(gamestate, previousPawnSquare, "_");
 		
 		renderBoard(gamestate);
-
+		
+		extendedState.isWhitesTurn = !(extendedState.isWhitesTurn);
+		previouslySelectedSquare = null;
 		promotionContext = false;
 	}
 	
