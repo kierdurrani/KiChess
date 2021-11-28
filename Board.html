@@ -11,9 +11,10 @@
 		width: 800px;
 		height: 800px;
 		border: 2px solid black; 
+		opacity: 1.0
 	}
-
-	td{
+	
+	.square{
 		position: relative;
 		padding: 0; 
 		margin: 0;
@@ -23,10 +24,20 @@
 		left: 0;
 	}
 	
-	#promotionWindow{
-		height: 100px
+	#promotionOverlay{
+		position: absolute;
+		top: 110px;
+		left: 200px;
+		border: 2px solid ;
+		border-color: #000000;
+		display: none;
 	}
 	
+	.promo{
+		background-color: #cccccc
+	
+	}
+
 	img
 	{
 		position: absolute;
@@ -34,20 +45,25 @@
 		left: 0;
 	}
 
+	
+
+	
 	.overlay{
 		position: absolute;
 		opacity: 0.5;
 		top: 0;	
 		left: 0;
+		height: 100%;
+		width: 100%;
 	}
-
+	
 	.wsqr {
 		background-color: #ffffb0;
 	}
-	
 	.bsqr {
 		background-color: #5c3f2e;
 	}
+
 
 
 </style>
@@ -94,7 +110,7 @@
 	}
 	
 	function amIInCheck(board, isWhiteTeam)
-	{	
+	{
 		// Overview of logic: start from the king and see if the king is in vision by an enemy piece
 		// team == true -> white 
 		
@@ -478,7 +494,7 @@
 	
 		// Mark the newly selected square.
 		var currentSquare = document.getElementById(coord);	
-		currentSquare.innerHTML = '<img src="assets/SelectedSquare.png"height = 97px width = 97px style = "opacity:1.0" >' +  currentSquare.innerHTML; // Show green selection
+		currentSquare.innerHTML = '<img src="assets/SelectedSquare.png" class="overlay" >' +  currentSquare.innerHTML; // Show green selection
 		
 		var legalMoves = getLegalMoves(coord);
 		for (const move of Object.keys(legalMoves)) {	
@@ -486,9 +502,9 @@
 			
 			if(getPiece(move) !== "_")
 			{
-				newSquare.innerHTML += '<img src="assets/TakePiece.png"height = 97px width = 97px  >'; 
+				newSquare.innerHTML += '<img src="assets/TakePiece.png" class="overlay" >'; 
 			}else{
-				newSquare.innerHTML += '<img src="assets/MovePiece.png"height = 97px width = 97px  >'; 
+				newSquare.innerHTML += '<img src="assets/MovePiece.png" class="overlay" >'; 
 				// TODO: special cases of castling and en-passant
 			}	
 		}	
@@ -505,11 +521,20 @@
 	}
 	
 	var previouslySelectedSquare = null;
+	var promotionContext = false;
 	function selectSquare(coord){
 	
 		console.log("clicked on " + coord);
+		if(promotionContext){
+			// TODO: confirm correcteness
+			document.getElementById('chessboard').style.opacity = 1.0;
+			document.getElementById('promotionOverlay').style.display = 'none';
+			promotionContext = false;
+		}
+		
+		
 		if( gameMetaData.isWhitesTurn & (! extendedState.isWhiteHuman)){ console.log("White to play. Waiting for CPU"); return;} 
-		if( gameMetaData.isBlacksTurn & (! extendedState.isBlackHuman)){ console.log("Black to play. Waiting for CPU"); return;} 		
+		if( gameMetaData.isBlacksTurn & (! extendedState.isBlackHuman)){ console.log("Black to play. Waiting for CPU"); return;} 
 		
 		if(previouslySelectedSquare == null){
 		
@@ -553,6 +578,10 @@
 				
 				// TODO: Pawn Promotion
 				if(legalMoves[coord].promotion){
+					promotionContext = true;
+					document.getElementById('promotionOverlay').style.display = 'block';
+					
+					document.getElementById('chessboard').style.opacity = 0.3;
 					
 				}
 				
@@ -645,12 +674,16 @@
 			checkSquare2.innerHTML = '<img src="assets/Check.png"height = 97px width = 97px  >' +  checkSquare2.innerHTML ;
 		}
 	}
-
+	
+	function promotePawn(newPiece){
+		
+	}
+	
 </script>
 <body>	
 	<table id = "chessboard">
 	  <tr>
-		<td id="a8" onclick = selectSquare("a8") class="wsqr square">a8</td>
+		<td id="a8" onclick = selectSquare("a8") class="wsqr square"></td>
 		<td id="b8" onclick = selectSquare("b8") class="bsqr square"></td>
 		<td id="c8" onclick = selectSquare("c8") class="wsqr square"></td>
 		<td id="d8" onclick = selectSquare("d8") class="bsqr square"></td>
@@ -732,14 +765,13 @@
 	</table>
 
 	<button onclick="startGame()" > Start Game </button>
-
 </body>
-	<table  class = "promotionWindow" >
-		<tr>
-			<td onclick = promotePawn("a8","n") style = "width: 100px"><img src="assets/blackPieces/knight.png" height = 97px width = 97px ></td>
-			<td onclick = promotePawn("a8","b") style = "width: 100px"><img src="assets/blackPieces/bishop.png" height = 97px width = 97px ></td>
-			<td onclick = promotePawn("a8","r") style = "width: 100px"><img src="assets/blackPieces/rook.png"   height = 97px width = 97px ></td>
-			<td onclick = promotePawn("a8","q") style = "width: 100px"><img src="assets/blackPieces/queen.png"  height = 97px width = 97px ></td>
-		</tr>
-	</table>
+<table >
+	<tr id = "promotionOverlay"; style='background-color: #ffffff'>
+		<td class="promo" onclick = promotePawn('n')><div><img src="assets/blackPieces/knight.png" style='position: relative' ></div></td>
+		<td class="promo" onclick = promotePawn('b')></div><img src="assets/blackPieces/bishop.png" style='position: relative'  ></div></td>
+		<td class="promo" onclick = promotePawn('r')> <img src="assets/blackPieces/rook.png" style='position: relative' ></td>
+		<td class="promo" onclick = promotePawn('q')> <img src="assets/blackPieces/queen.png" style='position: relative' ></td>
+	</tr>
+</table>
 </html>
