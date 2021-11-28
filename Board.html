@@ -4,14 +4,29 @@
 	<link rel="icon" href="assets/whitePieces/rook.png">
 </head>
 
+
 <style>
 
 	table{
+			   
 		width: 800px;
 		height: 800px;
 		border: 2px solid black; 
 	}
 	
+		
+							
+				 
+				
+  
+ 
+		
+							
+				 
+				
+  
+ 
+ 
 	td{
 		position: relative;
 		padding: 0; 
@@ -42,6 +57,11 @@
 	
 	.bsqr {
 		background-color: #5c3f2e;
+			   
+			   
+					 
+		 
+		  
 	}
 
 
@@ -208,7 +228,7 @@
 		// The hash table contains an object with properties: gamestate = string rep of the board
 		// Assume that enpassanable will be no unless specified.
 		// Example:
-		// CandidateLegalMoves[newCoords] = {gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece), extendedStateChange : {"EnpassanablePawn": 'h1'}, promotion: true};
+		// CandidateLegalMoves[newCoords] = {gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece), extendedStateChange : {"EnpassanablePawn": 'h1'}, promotion: h8};
 
 		// Auxillary functions:
 		function isEnemyPiece(piece){
@@ -411,7 +431,8 @@
 			// Pawn can move forwards
 			if( newCoords && getPiece(newCoords) === "_" ){
 				
-				var promotion = newCoords.match('.8') || newCoords.match('.1');
+				var promotion = false
+				if(newCoords.match('.8') || newCoords.match('.1')){ promotion = newCoords; }
 				CandidateLegalMoves[newCoords] = { gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece), promotion: promotion };
 				
 				// Can move 2 spaces on first move:
@@ -427,7 +448,8 @@
 			newCoords = transCoords(coord, 1, direction * 1);
 			if(  newCoords && (isEnemyPiece(getPiece(newCoords)) || (newCoords === extendedState.EnpassanablePawn)) )
 			{
-				var promotion = newCoords.match('.8') || newCoords.match('.1'); // promotion is "true" if pawn reaches last rank.
+				var promotion = false
+				if(newCoords.match('.8') || newCoords.match('.1')){ promotion = newCoords; }
 				CandidateLegalMoves[newCoords] = { gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece), promotion: promotion };
 				
 				// In the event of en-passant, also need to remove the other pawn 
@@ -440,7 +462,8 @@
 			newCoords = transCoords(coord, -1, direction * 1);
 			if(  newCoords && (isEnemyPiece(getPiece(newCoords)) || (newCoords === extendedState.EnpassanablePawn) ) )
 			{
-				var promotion = newCoords.match('.8') || newCoords.match('.1');
+				var promotion = false
+				if(newCoords.match('.8') || newCoords.match('.1')){ promotion = newCoords; }
 				CandidateLegalMoves[newCoords] = { gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece), promotion: promotion };
 				
 				// In the event of en-passant, also need to remove the other pawn 
@@ -470,7 +493,7 @@
 	
 		// Mark the newly selected square.
 		var currentSquare = document.getElementById(coord);	
-		currentSquare.innerHTML = '<img src="assets/SelectedSquare.png" class="overlay" height = 97px width = 97px style = "opacity:1.0" >' +  currentSquare.innerHTML; // Show green selection
+		currentSquare.innerHTML = '<img src="assets/SelectedSquare.png"height = 97px width = 97px style = "opacity:1.0" >' +  currentSquare.innerHTML; // Show green selection
 		
 		var legalMoves = getLegalMoves(coord);
 		for (const move of Object.keys(legalMoves)) {	
@@ -478,9 +501,9 @@
 			
 			if(getPiece(move) !== "_")
 			{
-				newSquare.innerHTML += '<img src="assets/TakePiece.png" class="overlay" height = 97px width = 97px  >'; 
+				newSquare.innerHTML += '<img src="assets/TakePiece.png"height = 97px width = 97px  >'; 
 			}else{
-				newSquare.innerHTML += '<img src="assets/MovePiece.png" class="overlay" height = 97px width = 97px  >'; 
+				newSquare.innerHTML += '<img src="assets/MovePiece.png"height = 97px width = 97px  >'; 
 				// TODO: special cases of castling and en-passant
 			}	
 		}	
@@ -543,26 +566,27 @@
 				// gamestate = calculateBoardState(gamestate, previouslySelectedSquare, "_");
 				
 				
+				// TODO: Pawn Promotion
+				if(legalMoves[coord].promotion){
+					
+				}
+				
+				// Update gamestate and gameextended state.
 				gamestate = legalMoves[coord].gamestate;
 				
 				extendedState['EnpassanablePawn'] = false;
 				for (const property in legalMoves[coord].extendedStateChange) {
-
+					
 					// iterate over all properties $key of the object
 					console.log("setting property " + property + " to value: " +  legalMoves[coord].extendedStateChange[property])
 					extendedState[property] = legalMoves[coord].extendedStateChange[property];
-				}			
+				}
 				
 				renderBoard(gamestate);
 				
+				// Update turn 
 				extendedState.isWhitesTurn = !(extendedState.isWhitesTurn);
 				previouslySelectedSquare = null;
-				
-				// TODO: Pawn Promotion
-				
-				
-				
-				
 				
 				
 			}else{
@@ -630,10 +654,10 @@
 			var kingsCoords = String.fromCharCode(letterCoord + 96) + numberCoord;
 			
 			var checkSquare =  document.getElementById(kingsCoords);
-			checkSquare.innerHTML = '<img src="assets/Check.png" class="overlay" height = 97px width = 97px, style = "opacity: 1"  >' +  checkSquare.innerHTML ;
+			checkSquare.innerHTML = '<img src="assets/Check.png"height = 97px width = 97px, style = "opacity: 1"  >' +  checkSquare.innerHTML ;
 			
 			var checkSquare2 =  document.getElementById(isInCheck);
-			checkSquare2.innerHTML = '<img src="assets/Check.png" class="overlay" height = 97px width = 97px  >' +  checkSquare2.innerHTML ;
+			checkSquare2.innerHTML = '<img src="assets/Check.png"height = 97px width = 97px  >' +  checkSquare2.innerHTML ;
 		}
 	}
 
@@ -725,4 +749,12 @@
 	<button onclick="startGame()" > Start Game </button>
 
 </body>
+	<table  class = "promotionWindow" >
+		<tr>
+			<td onclick = promotePawn("a8","n") style = "width: 100px"><img src="assets/blackPieces/knight.png" height = 97px width = 97px ></td>
+			<td onclick = promotePawn("a8","b") style = "width: 100px"><img src="assets/blackPieces/bishop.png" height = 97px width = 97px ></td>
+			<td onclick = promotePawn("a8","r") style = "width: 100px"><img src="assets/blackPieces/rook.png"   height = 97px width = 97px ></td>
+			<td onclick = promotePawn("a8","q") style = "width: 100px"><img src="assets/blackPieces/queen.png"  height = 97px width = 97px ></td>
+		</tr>
+	</table>
 </html>
