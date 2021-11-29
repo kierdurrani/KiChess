@@ -2,18 +2,23 @@
 <body>
 <script>
 
+var gamestate = "RNBQKBNR;PPPPPPPP;________;________;________;________;pppppppp;rnbqkbnr;"
 
-	$(document).click(function(event) { 
-	  var $target = $(event.target);
-	  if(!$target.closest('#menucontainer').length && 
-	  $('#menucontainer').is(":visible")) {
-		$('#menucontainer').hide();
-	  }        
-	});
-	
-	function promotePawn(x,y){
-		console.log("Promote Pawn: " + x + " " + y);
-	}
+
+var changedState = gamestate.toUpperCase();
+
+
+console.log(changedState.length);
+var referenceState = gamestate.toLowerCase();
+ 
+  
+var x = 0;
+while( x < 72){
+  if(referenceState[x] === gamestate[x]){
+    console.log(x);
+    x++;
+  }
+}
 
 </script>
 <table>

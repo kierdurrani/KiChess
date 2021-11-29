@@ -602,7 +602,7 @@
 				renderBoard(gamestate);
 				
 				// Update turn 
-				extendedState.isWhitesTurn = !(extendedState.isWhitesTurn);
+				turnTransition();
 				previouslySelectedSquare = null;
 				
 				
@@ -638,7 +638,6 @@
 	function renderBoard(state){
 	
 		var rows = state.split(';');
-		
 		var chessBoard = document.getElementsByClassName("square");
 		
 		var x = 0;
@@ -676,11 +675,62 @@
 			var checkSquare =  document.getElementById(kingsCoords);
 			checkSquare.innerHTML = '<img src="assets/Check.png"height = 97px width = 97px, style = "opacity: 1"  >' +  checkSquare.innerHTML ;
 			
-			var checkSquare2 =  document.getElementById(isInCheck);
-			checkSquare2.innerHTML = '<img src="assets/Check.png"height = 97px width = 97px  >' +  checkSquare2.innerHTML ;
+			// var checkSquare2 =  document.getElementById(isInCheck);
+			// checkSquare2.innerHTML = '<img src="assets/Check.png"height = 97px width = 97px  >' +  checkSquare2.innerHTML ;
 		}
 	}
 	
+	function turnTransition(){
+		extendedState.isWhitesTurn = !(extendedState.isWhitesTurn);
+		
+		// TODO: See if in stalemate / checkmate
+		// Use this to get next possible moves from this state.
+		
+		// get all allied piece (this is for speed)
+		var referenceState;
+		if(extendedState.isWhitesTurn){
+			referenceState = gamestate.toLowerCase();
+		}else{
+			referenceState = gamestate.toUpperCase();
+		}
+		
+		for (let x = 0; x < 72 ; x++) {
+			if(referenceState[x] === '_' | referenceState[x] === ';'  ){continue;}
+			if(referenceState[x] === gamestate[x]){
+				// indicates is allied piece.
+				// TODO: calculate coords.
+				
+				var letterCoord =  (x % 9) + 1 ;
+				var numberCoord =  (8 -  Math.floor(x / 9));
+				var currentPieceCoords = String.fromCharCode(letterCoord + 96) + numberCoord;
+				
+				if(Object.keys(getLegalMoves(currentPieceCoords)).length > 0){
+					return;
+				}
+			}
+		}
+		console.log('no moves found');
+		// TODO: handle stalemate / checkmate 
+		if(amIInCheck(gamestate, extendedState.isWhitesTurn)){
+			checkmate(extendedState.isWhitesTurn);
+		}else{
+			stalemate;
+		}
+		return
+		
+		// END TODO 
+	}
+	function checkmate(loosingTeamIsWhite){
+		if(loosingTeamIsWhite){
+			console.log('Black won!');
+		}else{
+			console.log('White won!');
+		}
+		
+	}
+	function stalemate(){
+	
+	}
 	function promotePawn(newPiece){
 		
 		document.getElementById('chessboard').style.opacity = 1.0;
@@ -696,8 +746,8 @@
 		gamestate = calculateBoardState(gamestate, previousPawnSquare, "_");
 		
 		renderBoard(gamestate);
+		turnTransition();
 		
-		extendedState.isWhitesTurn = !(extendedState.isWhitesTurn);
 		previouslySelectedSquare = null;
 		promotionContext = false;
 	}
