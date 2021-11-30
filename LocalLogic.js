@@ -6,12 +6,11 @@ var extendedState = {
 	"h1": true,
 	"a8": true,
 	"h8": true,
-	"EnpassanablePawn": false,
-	"StateRepetitionCounter": {}
+	"Enpassant": false
 }
 var gameMetaData = {
-	"isWhiteHuman": true,
-	"isBlackHuman": true,
+	"isWhiteCPU": false,
+	"isBlackCPU": true,
 	"lastMovedPieceFrom": null,
 	"lastMovedPieceTo": null
 }
@@ -44,12 +43,12 @@ function amIInCheck(board, isWhiteTeam)
 	
 	// Get coordinates of the king.
 	var kingIndex = isWhiteTeam ? board.indexOf('k') : board.indexOf('K'); // position of king in string
-	console.log("index: " + kingIndex);
+	// console.log("index: " + kingIndex);
 	
 	var letterCoord =  (kingIndex % 9) + 1 ;
 	var numberCoord =  (8 -  Math.floor(kingIndex / 9));
 	var kingsCoords = String.fromCharCode(letterCoord + 96) + numberCoord;
-	console.log("I think the king is at: " + kingsCoords);
+	// console.log("I think the king is at: " + kingsCoords);
 
 	function getPiece2(board, coordinate){
 
@@ -156,7 +155,7 @@ function getLegalMoves(coord){
 	// The hash table contains an object with properties: gamestate = string rep of the board
 	// Assume that enpassanable will be no unless specified.
 	// Example:
-	// CandidateLegalMoves[newCoords] = {gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece), extendedStateChange : {"EnpassanablePawn": 'h1'}, promotion: h8};
+	// CandidateLegalMoves[newCoords] = {gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece), extendedStateChange : {"Enpassant": 'h1'}, promotion: h8};
 	
 	// Auxillary functions:
 	function isEnemyPiece(piece){
@@ -168,7 +167,7 @@ function getLegalMoves(coord){
 	
 	function getDefaultExtendedState(){
 		var newExtendedState =  JSON.parse(JSON.stringify(extendedState));
-		newExtendedState.EnpassanablePawn = null;
+		newExtendedState.Enpassant = null;
 		newExtendedState.isWhitesTurn = ! extendedState.isWhitesTurn;
 		return newExtendedState;
 	}
@@ -205,8 +204,8 @@ function getLegalMoves(coord){
 		findAllMovesInLine(-1,0);
 		
 		// Disable castling after a rook moves.
-		if( ['a1','a8','h1','h8'].includes(coord) ){ // indicates rook has moved from starting square (or is in some other rooks square, which doesnt matter)
-			console.log("MOVING ROOK FROM START");
+		if( ['a1','a8','h1','h8'].includes(coord) ){ 
+			// This indicates rook has moved from starting square (or is in some other rooks square, which doesnt matter)
 			Object.keys(CandidateLegalMoves).forEach(function (movelocation) {
 				
 				CandidateLegalMoves[movelocation]['extendedState'][coord] = false;
@@ -391,7 +390,7 @@ function getLegalMoves(coord){
 				newCoords = transCoords(coord, 0, direction * 2);
 				if( newCoords && getPiece(newCoords) === "_" ){
 					var newExtendedState = getDefaultExtendedState();
-					newExtendedState['EnpassanablePawn'] = transCoords(coord, 0, direction * 1);
+					newExtendedState['Enpassant'] = transCoords(coord, 0, direction * 1);
 					CandidateLegalMoves[newCoords] = { gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece), extendedState: newExtendedState};
 				}	
 			}
@@ -399,29 +398,29 @@ function getLegalMoves(coord){
 		
 		// Pawn can take diagonally - and enpassant
 		newCoords = transCoords(coord, 1, direction * 1);
-		if(  newCoords && (isEnemyPiece(getPiece(newCoords)) || (newCoords === extendedState.EnpassanablePawn)) )
+		if(  newCoords && (isEnemyPiece(getPiece(newCoords)) || (newCoords === extendedState.Enpassant)) )
 		{
 			var promotion = false
 			if(newCoords.match('.8') || newCoords.match('.1')){ promotion = newCoords; }
 			CandidateLegalMoves[newCoords] = { gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece), extendedState: getDefaultExtendedState(),  promotion: promotion };
 			
 			// In the event of en-passant, also need to remove the other pawn 
-			if(newCoords === extendedState.EnpassanablePawn){
-				var pawnToDeleteCoords =  transCoords(extendedState.EnpassanablePawn, 0, (-direction)*1 );
+			if(newCoords === extendedState.Enpassant){
+				var pawnToDeleteCoords =  transCoords(extendedState.Enpassant, 0, (-direction)*1 );
 				CandidateLegalMoves[newCoords].gamestate = calculateBoardState(CandidateLegalMoves[newCoords].gamestate, pawnToDeleteCoords , '_');
 			}
 		}
 		
 		newCoords = transCoords(coord, -1, direction * 1);
-		if(  newCoords && (isEnemyPiece(getPiece(newCoords)) || (newCoords === extendedState.EnpassanablePawn) ) )
+		if(  newCoords && (isEnemyPiece(getPiece(newCoords)) || (newCoords === extendedState.Enpassant) ) )
 		{
 			var promotion = false
 			if(newCoords.match('.8') || newCoords.match('.1')){ promotion = newCoords; }
 			CandidateLegalMoves[newCoords] = { gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece), extendedState: getDefaultExtendedState(), promotion: promotion };
 			
 			// In the event of en-passant, also need to remove the other pawn 
-			if(newCoords === extendedState.EnpassanablePawn){
-				var pawnToDeleteCoords =  transCoords(extendedState.EnpassanablePawn, 0, (-direction)*1 );
+			if(newCoords === extendedState.Enpassant){
+				var pawnToDeleteCoords =  transCoords(extendedState.Enpassant, 0, (-direction)*1 );
 				CandidateLegalMoves[newCoords].gamestate = calculateBoardState(CandidateLegalMoves[newCoords].gamestate, pawnToDeleteCoords , '_');
 			}
 		}		
@@ -488,8 +487,8 @@ function selectSquare(coord){
 	}
 	
 	
-	if( gameMetaData.isWhitesTurn & (! extendedState.isWhiteHuman)){ console.log("White to play. Waiting for CPU"); return;} 
-	if( gameMetaData.isBlacksTurn & (! extendedState.isBlackHuman)){ console.log("Black to play. Waiting for CPU"); return;} 
+	if( gameMetaData.isWhiteCPU && (extendedState.isWhitesTurn)){ console.log("White to play. Waiting for CPU"); return;} 
+	if( gameMetaData.isBlackCPU && !(extendedState.isWhitesTurn)){ console.log("Black to play. Waiting for CPU"); return;} 
 	
 	if(previouslySelectedSquare == null){
 	
@@ -542,7 +541,7 @@ function selectSquare(coord){
 			// Update gamestate and gameextended state.
 			gamestate = legalMoves[coord].gamestate;
 			
-			//extendedState['EnpassanablePawn'] = false;
+			//extendedState['Enpassant'] = false;
 			//for (const property in legalMoves[coord].extendedStateChange) {
 			//	
 			//	// iterate over all properties $key of the object
@@ -579,8 +578,7 @@ function startGame(){
 		"h1": true,
 		"a8": true,
 		"h8": true,
-		"EnpassanablePawn": false,
-		"StateRepetitionCounter": {}
+		"Enpassant": false
 	}
 	gamestate = startingState;
 	renderBoard(startingState);
@@ -644,6 +642,7 @@ function turnTransition(){
 		referenceState = gamestate.toUpperCase();
 	}
 	
+	var legalMoves = false;
 	for (let x = 0; x < 72 ; x++) {
 		if(referenceState[x] === '_' | referenceState[x] === ';'  ){continue;}
 		if(referenceState[x] === gamestate[x]){
@@ -655,17 +654,27 @@ function turnTransition(){
 			var currentPieceCoords = String.fromCharCode(letterCoord + 96) + numberCoord;
 			
 			if(Object.keys(getLegalMoves(currentPieceCoords)).length > 0){
-				return; // some legal move exists - not in stale/check-mate
+				legalMoves = true; // some legal move exists - not in stale/check-mate
+				break;
 			}
 		}
 	}
-	console.log('no moves found');
-	// TODO: handle stalemate / checkmate 
-	if(amIInCheck(gamestate, extendedState.isWhitesTurn)){
-		checkmate(extendedState.isWhitesTurn);
-	}else{
-		stalemate;
+	
+	// Handle stalemate / checkmate 
+	if(!legalMoves){
+		console.log('no moves found');
+		if(amIInCheck(gamestate, extendedState.isWhitesTurn)){
+			checkmate(extendedState.isWhitesTurn);
+		}else{
+			stalemate;
+		}
 	}
+	
+	
+	// CPU move
+	if( gameMetaData.isWhiteCPU &&  (extendedState.isWhitesTurn)){ makeMove(); turnTransition();} 
+	if( gameMetaData.isBlackCPU && !(extendedState.isWhitesTurn)){ makeMove(); turnTransition();} 
+	
 	return
 	
 	// END TODO 
