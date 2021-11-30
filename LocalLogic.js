@@ -8,7 +8,7 @@ var extendedState = {
 	"h8": true,
 	"EnpassanablePawn": false,
 	"StateRepetitionCounter": {}
-}	
+}
 var gameMetaData = {
 	"isWhiteHuman": true,
 	"isBlackHuman": true,
@@ -22,7 +22,7 @@ function calculateBoardState(state, coord, piece){
 	var rowNumber = Number(coord[1]); 
 	
 	var position = 9 * (8 - rowNumber) + colNumber - 1;
-		
+	
 	return( state.substring(0, position) + piece + state.substring(position + 1) );
 }
 
@@ -157,7 +157,7 @@ function getLegalMoves(coord){
 	// Assume that enpassanable will be no unless specified.
 	// Example:
 	// CandidateLegalMoves[newCoords] = {gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece), extendedStateChange : {"EnpassanablePawn": 'h1'}, promotion: h8};
-
+	
 	// Auxillary functions:
 	function isEnemyPiece(piece){
 		if(piece === "_") {return false;}
