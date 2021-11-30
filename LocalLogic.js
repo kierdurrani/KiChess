@@ -22,7 +22,7 @@ function calculateBoardState(state, coord, piece){
 	var rowNumber = Number(coord[1]); 
 	
 	var position = 9 * (8 - rowNumber) + colNumber - 1;
-	
+		
 	return( state.substring(0, position) + piece + state.substring(position + 1) );
 }
 
@@ -166,16 +166,26 @@ function getLegalMoves(coord){
 		return !(isWhitePiece === extendedState.isWhitesTurn);
 	}
 	
+	function getDefaultExtendedState(){
+		var newExtendedState =  JSON.parse(JSON.stringify(extendedState));
+		newExtendedState.EnpassanablePawn = null;
+		newExtendedState.isWhitesTurn = ! extendedState.isWhitesTurn;
+		return newExtendedState;
+	}
 	
 	function findAllMovesInLine(x,y){
 		var iter = 1;
 		var newCoords = transCoords(coord, x * iter, y * iter);
 		while( newCoords ){
 			if(getPiece(newCoords) == '_'){
-				CandidateLegalMoves[newCoords] = { gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece) };
+				var newBoardState =  calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece);
+				var extendedStateCopy = getDefaultExtendedState();
+				CandidateLegalMoves[newCoords] = { gamestate: newBoardState, extendedState: extendedStateCopy};
 			}else{ 
 				if(isEnemyPiece(getPiece(newCoords))){
-					CandidateLegalMoves[newCoords] = { gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece) };
+					var newBoardState =  calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece);
+					var extendedStateCopy = getDefaultExtendedState();
+					CandidateLegalMoves[newCoords] = { gamestate: newBoardState, extendedState: extendedStateCopy};
 					break; // If can capture, cant carry on after.
 				}else{
 					break; // Cannot take own piece
@@ -197,11 +207,9 @@ function getLegalMoves(coord){
 		// Disable castling after a rook moves.
 		if( ['a1','a8','h1','h8'].includes(coord) ){ // indicates rook has moved from starting square (or is in some other rooks square, which doesnt matter)
 			console.log("MOVING ROOK FROM START");
-			Object.keys(CandidateLegalMoves).forEach(function (movelocation) {	
-				var disabledCastling = {};
-				disabledCastling[coord] = false;
+			Object.keys(CandidateLegalMoves).forEach(function (movelocation) {
 				
-				CandidateLegalMoves[movelocation]['extendedStateChange'] = disabledCastling;
+				CandidateLegalMoves[movelocation]['extendedState'][coord] = false;
 				console.log(CandidateLegalMoves[movelocation]);
 			})
 		}
@@ -214,7 +222,8 @@ function getLegalMoves(coord){
 		for(var possCoords of allCoords){
 			if( !possCoords ){ continue; } // Catch possible null value error here..
 			if( (getPiece(possCoords) == '_') || isEnemyPiece(getPiece(possCoords)) ){
-				CandidateLegalMoves[possCoords] = { gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), possCoords, piece) };
+				let newBoardState = calculateBoardState(calculateBoardState(gamestate, coord, '_'), possCoords, piece);
+				CandidateLegalMoves[possCoords] = { gamestate : newBoardState, extendedState: getDefaultExtendedState() };
 			}		
 		}
 	} 	
@@ -235,17 +244,17 @@ function getLegalMoves(coord){
 			if( (getPiece(possCoords) == '_') || isEnemyPiece(getPiece(possCoords)) ){
 				
 				// Moving the king prevents castling
-				var extendedStateChange = {}
+				var newExtendedState = getDefaultExtendedState();
 				if( piece == 'k' ){  
-					extendedStateChange['a1'] = false;
-					extendedStateChange['a8'] = false;
+					newExtendedState['a1'] = false;
+					newExtendedState['a8'] = false;
 				}
 				if( piece == 'K'){
-					extendedStateChange['h1'] = false;
-					extendedStateChange['h8'] = false;
+					newExtendedState['h1'] = false;
+					newExtendedState['h8'] = false;
 				}
-				CandidateLegalMoves[possCoords] = { gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), possCoords, piece), extendedStateChange : extendedStateChange };
-			}		
+				CandidateLegalMoves[possCoords] = { gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), possCoords, piece), extendedState: newExtendedState };
+			}
 		}
 		
 		// Castling:
@@ -267,7 +276,11 @@ function getLegalMoves(coord){
 								var intState3 = calculateBoardState(calculateBoardState(intState2, 'c1', '_'), 'b1', 'k'); // no need to check this state 
 								var finalState = calculateBoardState(calculateBoardState(intState3, 'a1', '_'), 'c1', 'r'); // This gets checked later
 								
-								CandidateLegalMoves['a1'] = { gamestate : finalState, extendedStateChange : {a1: false, h1: false} };
+								var newExtendedState = getDefaultExtendedState();
+								newExtendedState['a1'] = false;
+								newExtendedState['h1'] = false;
+								
+								CandidateLegalMoves['a1'] = { gamestate : finalState, extendedState: newExtendedState };
 							}
 						}
 					}
@@ -287,7 +300,11 @@ function getLegalMoves(coord){
 							var intState2 = calculateBoardState(calculateBoardState(intState1, 'f1', '_'), 'g1', 'k'); // no need to check this state 
 							var finalState = calculateBoardState(calculateBoardState(intState2, 'h1', '_'), 'f1', 'r'); // This gets checked later
 							
-							CandidateLegalMoves['h1'] = { gamestate : finalState, extendedStateChange : {a1: false, h1: false} };
+							var newExtendedState = getDefaultExtendedState();
+							newExtendedState['a1'] = false;
+							newExtendedState['h1'] = false;
+								
+							CandidateLegalMoves['h1'] = { gamestate : finalState, extendedState: newExtendedState};
 						}
 					}
 				}
@@ -309,7 +326,10 @@ function getLegalMoves(coord){
 								var intState3 = calculateBoardState(calculateBoardState(intState2, 'c8', '_'), 'b8', 'K'); // no need to check this state 
 								var finalState = calculateBoardState(calculateBoardState(intState3, 'a8', '_'), 'c8', 'R'); // This gets checked later
 								
-								CandidateLegalMoves['a8'] = { gamestate : finalState, extendedStateChange : {a8: false, h8: false} };
+								var newExtendedState = getDefaultExtendedState();
+								newExtendedState['a8'] = false;
+								newExtendedState['h8'] = false;
+								CandidateLegalMoves['a8'] = { gamestate : finalState, extendedState: newExtendedState };
 							}
 						}
 					}
@@ -328,7 +348,10 @@ function getLegalMoves(coord){
 							var intState2 = calculateBoardState(calculateBoardState(intState1, 'f8', '_'), 'g8', 'K'); // no need to check this state 
 							var finalState = calculateBoardState(calculateBoardState(intState2, 'h8', '_'), 'f8', 'R'); // This gets checked later
 							
-							CandidateLegalMoves['h8'] = { gamestate : finalState, extendedStateChange : {a8: false, h8: false} };
+							var newExtendedState = getDefaultExtendedState();
+							newExtendedState['a8'] = false;
+							newExtendedState['h8'] = false;
+							CandidateLegalMoves['h8'] = { gamestate : finalState, extendedState: newExtendedState };
 						}
 					}
 				}
@@ -361,13 +384,15 @@ function getLegalMoves(coord){
 			
 			var promotion = false
 			if(newCoords.match('.8') || newCoords.match('.1')){ promotion = newCoords; }
-			CandidateLegalMoves[newCoords] = { gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece), promotion: promotion };
+			CandidateLegalMoves[newCoords] = { gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece), extendedState: getDefaultExtendedState(), promotion: promotion };
 			
 			// Can move 2 spaces on first move:
 			if((piece === 'p' && coord.match('.2')) || (piece === 'P' && coord.match('.7'))){
 				newCoords = transCoords(coord, 0, direction * 2);
 				if( newCoords && getPiece(newCoords) === "_" ){
-					CandidateLegalMoves[newCoords] = { gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece), extendedStateChange : {EnpassanablePawn: transCoords(coord, 0, direction * 1)}};
+					var newExtendedState = getDefaultExtendedState();
+					newExtendedState['EnpassanablePawn'] = transCoords(coord, 0, direction * 1);
+					CandidateLegalMoves[newCoords] = { gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece), extendedState: newExtendedState};
 				}	
 			}
 		}			
@@ -378,7 +403,7 @@ function getLegalMoves(coord){
 		{
 			var promotion = false
 			if(newCoords.match('.8') || newCoords.match('.1')){ promotion = newCoords; }
-			CandidateLegalMoves[newCoords] = { gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece), promotion: promotion };
+			CandidateLegalMoves[newCoords] = { gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece), extendedState: getDefaultExtendedState(),  promotion: promotion };
 			
 			// In the event of en-passant, also need to remove the other pawn 
 			if(newCoords === extendedState.EnpassanablePawn){
@@ -392,7 +417,7 @@ function getLegalMoves(coord){
 		{
 			var promotion = false
 			if(newCoords.match('.8') || newCoords.match('.1')){ promotion = newCoords; }
-			CandidateLegalMoves[newCoords] = { gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece), promotion: promotion };
+			CandidateLegalMoves[newCoords] = { gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece), extendedState: getDefaultExtendedState(), promotion: promotion };
 			
 			// In the event of en-passant, also need to remove the other pawn 
 			if(newCoords === extendedState.EnpassanablePawn){
@@ -517,14 +542,15 @@ function selectSquare(coord){
 			// Update gamestate and gameextended state.
 			gamestate = legalMoves[coord].gamestate;
 			
-			extendedState['EnpassanablePawn'] = false;
-			for (const property in legalMoves[coord].extendedStateChange) {
-				
-				// iterate over all properties $key of the object
-				console.log("setting property " + property + " to value: " +  legalMoves[coord].extendedStateChange[property])
-				extendedState[property] = legalMoves[coord].extendedStateChange[property];
-			}
+			//extendedState['EnpassanablePawn'] = false;
+			//for (const property in legalMoves[coord].extendedStateChange) {
+			//	
+			//	// iterate over all properties $key of the object
+			//	console.log("setting property " + property + " to value: " +  legalMoves[coord].extendedStateChange[property])
+			//	extendedState[property] = legalMoves[coord].extendedStateChange[property];
+			//}
 			
+			extendedState = legalMoves[coord].extendedState;
 			renderBoard(gamestate);
 			
 			// Update turn 
@@ -607,7 +633,7 @@ function renderBoard(state){
 }
 
 function turnTransition(){
-	extendedState.isWhitesTurn = !(extendedState.isWhitesTurn);
+	// extendedState.isWhitesTurn = !(extendedState.isWhitesTurn);
 	
 	// Check if in stalemate / checkmate
 	// Use this to get next possible moves from this state. First get all allied piece (this is for speed)
@@ -670,8 +696,9 @@ function promotePawn(newPiece){
 	gamestate = calculateBoardState(gamestate, previousPawnSquare, "_");
 	
 	renderBoard(gamestate);
+	extendedState.isWhitesTurn = !(extendedState.isWhitesTurn);
 	turnTransition();
-	
+	 
 	previouslySelectedSquare = null;
 	promotionContext = false;
 }
