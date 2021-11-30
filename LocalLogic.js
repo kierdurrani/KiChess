@@ -629,12 +629,8 @@ function renderBoard(state){
 		// checkSquare2.innerHTML = '<img src="assets/Check.png"height = 97px width = 97px  >' +  checkSquare2.innerHTML ;
 	}
 }
-
-function turnTransition(){
-	// extendedState.isWhitesTurn = !(extendedState.isWhitesTurn);
+function existsLegalMoves(gamestate, extendedState){
 	
-	// Check if in stalemate / checkmate
-	// Use this to get next possible moves from this state. First get all allied piece (this is for speed)
 	var referenceState;
 	if(extendedState.isWhitesTurn){
 		referenceState = gamestate.toLowerCase();
@@ -642,7 +638,6 @@ function turnTransition(){
 		referenceState = gamestate.toUpperCase();
 	}
 	
-	var legalMoves = false;
 	for (let x = 0; x < 72 ; x++) {
 		if(referenceState[x] === '_' | referenceState[x] === ';'  ){continue;}
 		if(referenceState[x] === gamestate[x]){
@@ -654,19 +649,30 @@ function turnTransition(){
 			var currentPieceCoords = String.fromCharCode(letterCoord + 96) + numberCoord;
 			
 			if(Object.keys(getLegalMoves(currentPieceCoords)).length > 0){
-				legalMoves = true; // some legal move exists - not in stale/check-mate
-				break;
+				return true; // some legal move exists - not in stale/check-mate
 			}
 		}
 	}
+	return false;
+}
+
+function turnTransition(){
+	// extendedState.isWhitesTurn = !(extendedState.isWhitesTurn);
+	
+	// Check if in stalemate / checkmate
+	// Use this to get next possible moves from this state. First get all allied piece (this is for speed)
+
 	
 	// Handle stalemate / checkmate 
+	var legalMoves = existsLegalMoves(gamestate, extendedState);
 	if(!legalMoves){
 		console.log('no moves found');
 		if(amIInCheck(gamestate, extendedState.isWhitesTurn)){
 			checkmate(extendedState.isWhitesTurn);
+			return;
 		}else{
 			stalemate;
+			return;
 		}
 	}
 	

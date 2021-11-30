@@ -1,4 +1,4 @@
-function makeMove(){
+function makeMove2(){
 	var possStates = childstates();
 	var randomMove = possStates[ Math.floor(Math.random() * (possStates.length - 1))];
 	
@@ -9,24 +9,101 @@ function makeMove(){
 	renderBoard(gamestate);
 }
 
-function calculateNextMove(gamestate, extendedState){
+function makeMove(){
 	
-	if(extendedState.isWhitesTurn){
+	console.log("first order makeMove");
+	var possStates = childstates();
+	
+	// shuffle states
+	possStates = possStates
+		.map((value) => ({ value, sort: Math.random() }))
+		.sort((a, b) => a.sort - b.sort)
+		.map(({ value }) => value)
+
+	var bestState;
+	var bestScore;
+	var bestExtendedState;
+	for(var possState of possStates ){
 		
+		var posGamestate  = possState.split('|')[0];
+		var posExtendedState = JSON.parse(possState.split('|')[1]);
+		
+		var posScore = calculateMaterialScore(posGamestate, posExtendedState);
+		
+		if(extendedState.isWhitesTurn ){
+			// white wants 
+			if( (posScore > bestScore) || (bestScore == null) ){
+				bestScore = posScore;
+				bestState = posGamestate;
+				bestExtendedState = posExtendedState;
+			}
+		}else{
+			// black wants to find lowest score;
+			if( (posScore < bestScore) || (bestScore == null) ){
+				bestScore = posScore;
+				bestState = posGamestate;
+				bestExtendedState = posExtendedState;
+			}
+		}
 	}
-
-	if(extendedState.isWhitesTurn){
-		referenceState = gamestate.toLowerCase();
-	}else{
-		referenceState = gamestate.toUpperCase();
-	}
 	
-	// get all possible next moves
-
-	
-	
+	extendedState =  bestExtendedState;
+	gamestate = bestState;
+	renderBoard(gamestate);
 }
 
+
+function calculateMaterialScore(gamestate, extendedState){
+	let score = 0;
+	
+	if(amIInCheck(gamestate, extendedState.isWhitesTurn)){
+		if(extendedState.isWhitesTurn){
+			score = 0;
+		}else{
+			score = 0;
+		}
+		
+		// If in state/checkmate:
+		var legalMoves = existsLegalMoves(gamestate, extendedState);
+		if(!legalMoves){
+			if(amIInCheck(gamestate, extendedState.isWhitesTurn)){
+				// checkmate
+				if(extendedState.isWhitesTurn){ return -1000;
+				}else{ 							return +1000; }
+			}else{
+				// stalemate score is zero
+				return 0; 
+			}
+		}
+	}
+
+	for (let x = 0; x < 72 ; x++) {
+		if(gamestate[x] === '_' | gamestate[x] === ';'  ){continue;}
+		switch(gamestate[x]) {
+			case 'p':	score = score + 1;
+			break;
+			case 'P':	score = score - 1;
+			break;
+			case 'r':	score = score + 5;
+			break;
+			case 'R':	score = score - 5;
+			break;
+			case 'q':	score = score + 9;
+			break;
+			case 'Q':	score = score - 9;
+			break;
+			case 'b':	score = score + 3;
+			break;
+			case 'B':	score = score - 3;
+			break;
+			case 'n':	score = score + 3;
+			break;
+			case 'N':	score = score - 3;
+			default:
+		}
+	}
+	return score;
+}
 
 var time = 0;
 function start(){
