@@ -1,4 +1,5 @@
 function makeMove2(){
+	// Selects Random Legal Move
 	var possStates = childstates();
 	var randomMove = possStates[ Math.floor(Math.random() * (possStates.length - 1))];
 	
@@ -9,8 +10,17 @@ function makeMove2(){
 	renderBoard(gamestate);
 }
 
+var analysedMove = {
+	NiaveScore: 0,
+	DeepScore: 0,
+	Depth: 0,
+	ChildStates: [],
+	ParentStates: [], // is this necessary?
+	SerializedState: ""
+}
+
 function makeMove(){
-	
+	// Greedy best score next move;
 	console.log("first order makeMove");
 	var possStates = childstates();
 	
@@ -50,6 +60,33 @@ function makeMove(){
 	extendedState =  bestExtendedState;
 	gamestate = bestState;
 	renderBoard(gamestate);
+}
+
+
+var AllAnalysedStates = {};
+function calculateBestMove(depth, startingTotalState, startingExtendedState){
+	
+	 // creates an object / dictionary
+	var startingAnalysed = {
+		NiaveScore: calculateMaterialScore(startingBoardState, startingExtendedState),
+		DeepScore: null,
+		Depth: 0,
+		ChildStates: getAllChildStates(startingBoardState, startingExtendedState), // TODO, child states
+		StateString:(startingTotalState + '|' + JSON.stringify(startingExtendedState) )
+	}
+	
+	
+	AllAnalysedStates[startingAnalysed.StateString.hashCode()] = [startingAnalysed];
+	for(var bestChildState of AllAnalysedStates ){
+		
+		
+	}
+	
+	// getAllChildStates
+}
+
+function calculateScoreToDepth(depth, ){
+	
 }
 
 
@@ -105,6 +142,7 @@ function calculateMaterialScore(gamestate, extendedState){
 	return score;
 }
 
+// Utility Functions
 var time = 0;
 function start(){
     time = Date.now();
@@ -114,7 +152,6 @@ function lap() {
     
     console.log("TIME ELAPSED: " + delta);
 };
-
 String.prototype.hashCode = function hash() {
   var hash = 0, i, chr;
   if (this.length === 0) return hash;
@@ -162,8 +199,6 @@ function getAllChildStates(gamestate, extendedState){
 	lap();
 	return allPossibleMoves;
 }
-
-
 
 function childstates(){
 	return getAllChildStates(gamestate, extendedState);
