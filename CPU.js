@@ -1,6 +1,6 @@
 function makeMove2(){
 	// Selects Random Legal Move
-	var possStates = childstates();
+	var possStates = getAllChildStates(gamestate, extendedState);
 	var randomMove = possStates[ Math.floor(Math.random() * (possStates.length - 1))];
 	
 	console.log("makeMove");
@@ -22,7 +22,7 @@ var analysedMove = {
 function makeMove(){
 	// Greedy best score next move;
 	console.log("first order makeMove");
-	var possStates = childstates();
+	var possStates = getAllChildStates(gamestate, extendedState);
 	
 	// shuffle states
 	possStates = possStates
@@ -62,17 +62,17 @@ function makeMove(){
 	renderBoard(gamestate);
 }
 
-
+// Hashtable of analysed States
 var AllAnalysedStates = {};
-function calculateBestMove(depth, startingTotalState, startingExtendedState){
+function calculateBestMove(depth, startingBoardState, startingExtendedState){
 	
-	 // creates an object / dictionary
+	 // creates an object 
 	var startingAnalysed = {
 		NiaveScore: calculateMaterialScore(startingBoardState, startingExtendedState),
 		DeepScore: null,
 		Depth: 0,
 		ChildStates: getAllChildStates(startingBoardState, startingExtendedState), // TODO, child states
-		StateString:(startingTotalState + '|' + JSON.stringify(startingExtendedState) )
+		StateString:(startingBoardState + '|' + JSON.stringify(startingExtendedState) )
 	}
 	
 	
@@ -89,6 +89,40 @@ function calculateScoreToDepth(depth, ){
 	
 }
 
+// Returns all states as a list in format: gamestate + "|" + JSON.stringify(extendedState);
+function getAllChildStates(gamestate, extendedState){
+	
+	var allPossibleMoves = []
+	
+	var referenceState;
+	if(extendedState.isWhitesTurn){
+		referenceState = gamestate.toLowerCase();
+	}else{
+		referenceState = gamestate.toUpperCase();
+	}
+	
+	for (let x = 0; x < 72 ; x++) {
+		if(referenceState[x] === '_' | referenceState[x] === ';'  ){continue;}
+		if(referenceState[x] === gamestate[x]){
+			// indicates is allied piece.
+			// TODO: calculate coords
+			console.log(x);
+			var letterCoord =  (x % 9) + 1 ;
+			var numberCoord =  (8 -  Math.floor(x / 9));
+			var currentPieceCoords = String.fromCharCode(letterCoord + 96) + numberCoord;
+			console.log(x + "<- int, coords-> " + currentPieceCoords);
+			let legalMoves = getLegalMoves(currentPieceCoords);
+			console.log(legalMoves);
+			for (const move of Object.keys(legalMoves)) {
+				
+				allPossibleMoves = allPossibleMoves.concat( legalMoves[move].gamestate + "|" + JSON.stringify(legalMoves[move].extendedState));
+				// TODO, case of promotion!
+			}
+		}
+	}
+	lap();
+	return allPossibleMoves;
+}
 
 function calculateMaterialScore(gamestate, extendedState){
 	let score = 0;
@@ -162,50 +196,3 @@ String.prototype.hashCode = function hash() {
   }
   return hash;
 };
-
-
-function getAllChildStates(gamestate, extendedState){
-	start();
-	var allPossibleMoves = []
-	
-	// var JSON.parse(JSON.stringify(extendedState));
-	
-	var referenceState;
-	if(extendedState.isWhitesTurn){
-		referenceState = gamestate.toLowerCase();
-	}else{
-		referenceState = gamestate.toUpperCase();
-	}
-	
-	for (let x = 0; x < 72 ; x++) {
-		if(referenceState[x] === '_' | referenceState[x] === ';'  ){continue;}
-		if(referenceState[x] === gamestate[x]){
-			// indicates is allied piece.
-			// TODO: calculate coords
-			console.log(x);
-			var letterCoord =  (x % 9) + 1 ;
-			var numberCoord =  (8 -  Math.floor(x / 9));
-			var currentPieceCoords = String.fromCharCode(letterCoord + 96) + numberCoord;
-			console.log(x + "<- int, coords-> " + currentPieceCoords);
-			let legalMoves = getLegalMoves(currentPieceCoords);
-			console.log(legalMoves);
-			for (const move of Object.keys(legalMoves)) {
-				
-				allPossibleMoves = allPossibleMoves.concat( legalMoves[move].gamestate + "|" + JSON.stringify(legalMoves[move].extendedState));
-				// TODO, case of promotion!
-			}
-		}
-	}
-	lap();
-	return allPossibleMoves;
-}
-
-function childstates(){
-	return getAllChildStates(gamestate, extendedState);
-}
-// Best move is the one which results in the gamestate with the highest score.
-// Best(state) = max( {children(state)} )
-
-// Score(state) = 
-
-
