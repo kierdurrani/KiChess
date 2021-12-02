@@ -260,10 +260,10 @@ function getLegalMoves(coord, bstate, estate){
 				var newExtendedState = getDefaultExtendedState();
 				if( piece == 'k' ){  
 					newExtendedState['a1'] = false;
-					newExtendedState['a8'] = false;
+					newExtendedState['h1'] = false;
 				}
 				if( piece == 'K'){
-					newExtendedState['h1'] = false;
+					newExtendedState['a8'] = false;
 					newExtendedState['h8'] = false;
 				}
 				CandidateLegalMoves[possCoords] = { gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), possCoords, piece), extendedState: newExtendedState };
