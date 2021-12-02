@@ -1,14 +1,17 @@
+var maxDepth = 3;
 function makeMove(){
-
-	var bestMoveAndScore = bestMoveToDepth((gamestate + "|" + JSON.stringify(extendedState)), 5);
+	
+	AllAnalysedStates = {};
+	var bestMoveAndScore = bestMoveToDepth((gamestate + "|" + JSON.stringify(extendedState)), maxDepth);
 	
 	console.log("# States analysed: " + Object.keys(AllAnalysedStates).length);
-	console.log("Score Estimate" + bestMoveAndScore);
-	
+	console.log("Score Estimate" + bestMoveAndScore.bestScore);
 	
 	var stringRep = bestMoveAndScore.bestState;
-	extendedState =  stringRep.split('|')[0];
-	gamestate =  JSON.parse(stringRep.split('|')[1]);
+	global = stringRep;
+	gamestate =  stringRep.split('|')[0];
+	extendedState =  JSON.parse(stringRep.split('|')[1]);
+	
 	renderBoard(gamestate);
 }
 
@@ -24,45 +27,46 @@ function bestMoveToDepth(startingState, depth){
 	// See if state has already been analsed. If not, create the state in AllAnalysedStates
 	var analysedStartingState = createOrGetAnalysedState(startingState);
 	
-	// If precalculated childstates exist, use that. otherwise calculate it.
-	if(! analysedStartingState.ChildStates) { analysedStartingState.ChildStates = getAllChildStatesWrapper(startingState); }
-	
 	if(analysedStartingState.Depth >= depth){
-		// This state has already been analysed to sufficient depth to just return the already calculated best move.
-		// Also catches check and stalemates.
+		// This state has already been analysed to sufficient depth. So just return the already calculated best move.
+		// (Also catches check and stalemates, since their depth is set to inf).
 		return {bestState: analysedStartingState.BestChildState, bestScore: analysedStartingState.DeepScore};
 	}
 	
+	// If ChildStates have already been calculated, use that, otherwise calculate it.
+	if(! analysedStartingState.ChildStates) { analysedStartingState.ChildStates = getAllChildStatesWrapper(startingState); }
+	
 	var bestState;
 	var bestScore;
-	global = startingState;
 	for(var possState of analysedStartingState.ChildStates){
 		
-		var analysedState = createOrGetAnalysedState(possState);
+		var analysedPossState = createOrGetAnalysedState(possState);
 		
-		if(analysedState.Depth < depth){
+		if(analysedPossState.Depth < depth){
 			// we have not analysed this state to sufficient depth, so analyse with recursive call!
 			var moveAndScore = bestMoveToDepth(possState, (depth - 1));
-			possState.DeepScore = moveAndScore.bestScore;
-			possState.BestChildState = moveAndScore.bestState;
+			analysedPossState.DeepScore = moveAndScore.bestScore;
+			analysedPossState.BestChildState = moveAndScore.bestState;
 		}
 		
 		// Now we can be sure that we have already analysed this state to sufficient depth. Now we simply min_max
-		if(possState.StateString[89] === 't' ){ // this is a quick and dirty equivalent to - if(extendedState.isWhitesTurn)
+		if(analysedPossState.StateString[89] === 't' ){ // this is a quick and dirty equivalent to - if(extendedState.isWhitesTurn)
 			// white wants to find highest score;
-			if( (posScore > bestScore) || (bestScore == null) ){
-				bestScore = posScore;
-				bestState = posGamestate;
+			if( (analysedPossState.DeepScore < bestScore) || (bestScore == null) ){
+				bestScore = analysedPossState.DeepScore;
+				bestState = analysedPossState.StateString;
 			}
 		}else{
 			// black wants to find lowest score;
-			if( (posScore < bestScore) || (bestScore == null) ){
-				bestScore = posScore;
-				bestState = posGamestate;
+			if( (analysedPossState.DeepScore > bestScore) || (bestScore == null) ){
+				bestScore = analysedPossState.DeepScore;
+				bestState = analysedPossState.StateString;
 			}
 		}
 	}
 	analysedStartingState.Depth = depth;
+	analysedStartingState.BestChildState = bestState;
+	analysedStartingState.DeepScore = bestScore;
 	return {bestState: bestState, bestScore: bestScore};
 }
 
@@ -76,7 +80,7 @@ function getAnalysedStates(stateString){
 	return null; 
 }
 function createOrGetAnalysedState(stateString){
-	console.log(stateString);
+//	console.log(stateString);
 	var hashCode = stateString.hashCode();
 	if(AllAnalysedStates[hashCode]){
 		
@@ -89,7 +93,6 @@ function createOrGetAnalysedState(stateString){
 	
 	var baseScore = calculateMaterialScoreWrapper(stateString);
 	
-
 	var AnalysedState = {
 		DeepScore: baseScore,
 		Depth: 0,
@@ -137,9 +140,9 @@ function getAllChildStates(gamestate, extendedState){
 			var numberCoord =  (8 -  Math.floor(x / 9));
 			var currentPieceCoords = String.fromCharCode(letterCoord + 96) + numberCoord;
 			
-			console.log("ABOUT TO CALL getLegalMoves WITH: " + currentPieceCoords);
+			// console.log("ABOUT TO CALL getLegalMoves WITH: " + currentPieceCoords);
 			global = gamestate;
-			let legalMoves = getLegalMoves(currentPieceCoords);
+			let legalMoves = getLegalMoves(currentPieceCoords, gamestate, extendedState);
 			
 			for (const move of Object.keys(legalMoves)) {
 				

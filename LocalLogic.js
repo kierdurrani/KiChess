@@ -36,6 +36,8 @@ function transCoords(coord, y, x){
 	}
 }
 
+function getGameState(){ return gamestate;}
+function getExtendedState(){ return extendedState;}
 function amIInCheck(board, isWhiteTeam)
 {
 	// Overview of logic: start from the king and see if the king is in vision by an enemy piece
@@ -135,13 +137,28 @@ function amIInCheck(board, isWhiteTeam)
 	return false;
 }
 
-function getLegalMoves(coord, totalstate){
+
+function getLegalMoves(coord, bstate, estate){
 	
-	if(totalstate === null){
+	if(bstate == null){
+		// use global values if not passed in
+		console.log("get existing");
+		var gamestate  = getGameState();
+		var extendedState = getExtendedState();
 		
 	}else{
-		var gamestate  = totalstate.split('|')[0];
-		var extendedState = JSON.parse(totalstate.split('|')[1]);
+		var gamestate  = bstate;
+		var extendedState = estate;
+	}
+	
+	
+	function getPiece2(board, coordinate){
+		// console.log("getPiece2: " + board + coordinate);
+		var columnIndex = coordinate[0].charCodeAt(0) - 97; // Col is given by leading letter. This formula converts a char into its corresponding integer from 0-7
+		var rowContents = board.split(';')[8 - coordinate[1]]; // Rows are enumerated 'backwards' in the gamestate to the coords.
+		var cellContent = rowContents[columnIndex];      
+		
+		return cellContent;
 	}
 	
 	var piece = getPiece2(gamestate, coord);
@@ -206,7 +223,7 @@ function getLegalMoves(coord, totalstate){
 			Object.keys(CandidateLegalMoves).forEach(function (movelocation) {
 				
 				CandidateLegalMoves[movelocation]['extendedState'][coord] = false;
-				console.log(CandidateLegalMoves[movelocation]);
+				// console.log(CandidateLegalMoves[movelocation]);
 			})
 		}
 	}
@@ -655,7 +672,7 @@ function existsLegalMoves(gamestate, extendedState){
 			var numberCoord =  (8 -  Math.floor(x / 9));
 			var currentPieceCoords = String.fromCharCode(letterCoord + 96) + numberCoord;
 			
-			if(Object.keys(getLegalMoves(currentPieceCoords)).length > 0){
+			if(Object.keys(getLegalMoves(currentPieceCoords, gamestate, extendedState)).length > 0){
 				return true; // some legal move exists - not in stale/check-mate
 			}
 		}
