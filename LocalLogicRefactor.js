@@ -1,13 +1,5 @@
 var gamestate = "________;________;________;________;________;________;________;________;|1,1111,__"; // This encodes turn, castling rights (a1,h1,a8,h8) and enpassanable pawn
-var extendedState = {
-	"isWhitesTurn": true,
-	// represent allowed castling options:
-	"a1": true,
-	"h1": true,
-	"a8": true,
-	"h8": true,
-	"Enpassant": false
-}
+
 var gameMetaData = {
 	"isWhiteCPU": false,
 	"isBlackCPU": true,
@@ -37,7 +29,6 @@ function transCoords(coord, y, x){
 }
 
 function getGameState(){ return gamestate;}
-function getExtendedState(){ return extendedState;}
 function amIInCheck(board, isWhiteTeam)
 {
 	// Overview of logic: start from the king and see if the king is in vision by an enemy piece
@@ -138,17 +129,14 @@ function amIInCheck(board, isWhiteTeam)
 }
 
 
-function getLegalMoves(coord, bstate, estate){
+function getLegalMoves(coord, bstate){
 	
 	if(bstate == null){
 		// use global values if not passed in
 		console.log("get existing");
 		var gamestate  = getGameState();
-		var extendedState = getExtendedState();
-		
 	}else{
 		var gamestate  = bstate;
-		var extendedState = estate;
 	}
 	
 	
@@ -176,14 +164,11 @@ function getLegalMoves(coord, bstate, estate){
 		if(piece === "_") {return false;}
 		
 		var isWhitePiece  = (piece == piece.toLowerCase());
-		return !(isWhitePiece === extendedState.isWhitesTurn);
+		return !(isWhitePiece === (gamestate[73] === '1')); // isWhitePiece === isWhitesTurn
 	}
 	
 	function getDefaultExtendedState(){
-		var newExtendedState =  JSON.parse(JSON.stringify(extendedState));
-		newExtendedState.Enpassant = null;
-		newExtendedState.isWhitesTurn = ! extendedState.isWhitesTurn;
-		return newExtendedState;
+		return gamestate.split('|')[1];
 	}
 	
 	function findAllMovesInLine(x,y){
@@ -562,7 +547,6 @@ function selectSquare(coord){
 				return;
 			}
 			
-			// Process move:
 			// Update gamestate and gameextended state.
 			gamestate = legalMoves[coord].gamestate;
 			
@@ -573,8 +557,6 @@ function selectSquare(coord){
 			//	console.log("setting property " + property + " to value: " +  legalMoves[coord].extendedStateChange[property])
 			//	extendedState[property] = legalMoves[coord].extendedStateChange[property];
 			//}
-			gameMetaData.lastMovedPieceTo = coord;
-			gameMetaData.lastMovedPieceFrom = previouslySelectedSquare;
 			
 			extendedState = legalMoves[coord].extendedState;
 			renderBoard(gamestate);
@@ -597,7 +579,7 @@ function selectSquare(coord){
 
 function startGame(){
 	// Caps is black, lower case for white pieces. N = knight, K = king.
-	var startingState = "RNBQKBNR;PPPPPPPP;________;________;________;________;pppppppp;rnbqkbnr;"
+	var startingState = "RNBQKBNR;PPPPPPPP;________;________;________;________;pppppppp;rnbqkbnr;|1,1111,__"
 	extendedState =  {
 		"isWhitesTurn": true,
 		// represent allowed castling options:
@@ -612,13 +594,14 @@ function startGame(){
 
 }
 
-function renderBoard(state){
-
+function renderBoard(totalstate){
+	
+	var state = totalstate.split('|')[0]; // gets the board part of the state
 	var rows = state.split(';');
 	var chessBoard = document.getElementsByClassName("square");
 	
 	var x = 0;
-	for (const row of rows) {
+	for (const row of rows) {		
 		for( const cell of row.split('')){
 				
 			if( cell == 'R' ){ chessBoard[x].innerHTML = '<img src="assets/blackPieces/rook.png" height = 100px width = 100px >' } 
@@ -650,21 +633,11 @@ function renderBoard(state){
 		var kingsCoords = String.fromCharCode(letterCoord + 96) + numberCoord;
 		
 		var checkSquare =  document.getElementById(kingsCoords);
-		checkSquare.innerHTML = '<img src="assets/Check.png" height = 97px width = 97px, style = "opacity: 1"  >' +  checkSquare.innerHTML ;
+		checkSquare.innerHTML = '<img src="assets/Check.png"height = 97px width = 97px, style = "opacity: 1"  >' +  checkSquare.innerHTML ;
 		
 		// var checkSquare2 =  document.getElementById(isInCheck);
 		// checkSquare2.innerHTML = '<img src="assets/Check.png"height = 97px width = 97px  >' +  checkSquare2.innerHTML ;
 	}
-	
-	
-	try{
-		var movedFrom =  document.getElementById(gameMetaData.lastMovedPieceFrom);
-		movedFrom.innerHTML = '<img src="assets/LastMovedPiece.png" height = 97px width = 97px, style = "opacity: 0.6"  >' +  movedFrom.innerHTML ;
-		var movedTo =  document.getElementById(gameMetaData.lastMovedPieceTo);
-		movedTo.innerHTML = '<img src="assets/LastMovedPiece.png" height = 97px width = 97px, style = "opacity: 0.6"  >' +  movedTo.innerHTML ;
-	}catch{}
-	
-
 }
 function existsLegalMoves(gamestate, extendedState){
 	
@@ -746,9 +719,6 @@ function promotePawn(newPiece){
 	console.log(previousPawnSquare);
 	gamestate = calculateBoardState(gamestate, newSquare, newPiece);
 	gamestate = calculateBoardState(gamestate, previousPawnSquare, "_");
-	
-	gameMetaData.lastMovedPieceTo = previousPawnSquare;
-	gameMetaData.lastMovedPieceFrom = newSquare;
 	
 	renderBoard(gamestate);
 	extendedState.isWhitesTurn = !(extendedState.isWhitesTurn);
