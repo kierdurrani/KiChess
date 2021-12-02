@@ -115,11 +115,12 @@ function createOrGetAnalysedState(stateString){
 // Returns all states as a list in format: gamestate + "|" + JSON.stringify(extendedState);
 // getAllChildStates(stringRep.split('|')[0], JSON.parse(stringRep.split('|')[1])) 
 function getAllChildStatesWrapper(totalstate){
-	getAllChildStates(totalstate.split('|')[0], JSON.parse(totalstate.split('|')[1]))
+	
+	return getAllChildStates(totalstate.split('|')[0], JSON.parse(totalstate.split('|')[1]));
 }
 function getAllChildStates(gamestate, extendedState){
 	
-	var allPossibleMoves = []
+	var allPossibleMoves = [];
 	
 	var referenceState;
 	if(extendedState.isWhitesTurn){
@@ -136,6 +137,8 @@ function getAllChildStates(gamestate, extendedState){
 			var numberCoord =  (8 -  Math.floor(x / 9));
 			var currentPieceCoords = String.fromCharCode(letterCoord + 96) + numberCoord;
 			
+			console.log("ABOUT TO CALL getLegalMoves WITH: " + currentPieceCoords);
+			global = gamestate;
 			let legalMoves = getLegalMoves(currentPieceCoords);
 			
 			for (const move of Object.keys(legalMoves)) {

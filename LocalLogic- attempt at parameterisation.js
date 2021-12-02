@@ -135,14 +135,7 @@ function amIInCheck(board, isWhiteTeam)
 	return false;
 }
 
-function getLegalMoves(coord, totalstate){
-	
-	if(totalstate === null){
-		
-	}else{
-		var gamestate  = totalstate.split('|')[0];
-		var extendedState = JSON.parse(totalstate.split('|')[1]);
-	}
+function getLegalMoves(coord, gamestate){
 	
 	var piece = getPiece2(gamestate, coord);
 	var CandidateLegalMoves = {};
@@ -444,7 +437,7 @@ function markLegalMoves(coord){
 	var currentSquare = document.getElementById(coord);	
 	currentSquare.innerHTML = '<img src="assets/SelectedSquare.png" class="overlay" >' +  currentSquare.innerHTML; // Show green selection
 	
-	var legalMoves = getLegalMoves(coord);
+	var legalMoves = getLegalMoves(coord, gamestate);
 	for (const move of Object.keys(legalMoves)) {	
 		var newSquare = document.getElementById(move);
 		
@@ -527,7 +520,7 @@ function selectSquare(coord){
 		while (elements.length > 0) elements[0].remove();
 		
 		// Validate the move is in the set of legal moves
-		var legalMoves = getLegalMoves(previouslySelectedSquare);
+		var legalMoves = getLegalMoves(previouslySelectedSquare, gamestate);
 		
 		if(legalMoves[coord]){
 			
@@ -655,7 +648,7 @@ function existsLegalMoves(gamestate, extendedState){
 			var numberCoord =  (8 -  Math.floor(x / 9));
 			var currentPieceCoords = String.fromCharCode(letterCoord + 96) + numberCoord;
 			
-			if(Object.keys(getLegalMoves(currentPieceCoords)).length > 0){
+			if(Object.keys(getLegalMoves(currentPieceCoords, gamestate)).length > 0){
 				return true; // some legal move exists - not in stale/check-mate
 			}
 		}
