@@ -37,10 +37,8 @@ function transCoords(coord, y, x){
 function getGameState(){ return gamestate;}
 function getExtendedState(){ return extendedState;}
 
-var TimeAmIInCheck = 0;
 function amIInCheck(board, isWhiteTeam)
 {
-	var Time3start = performance.now()
 	// Overview of logic: start from the king and see if the king is in vision by an enemy piece
 	// team == true -> white 
 	
@@ -132,13 +130,11 @@ function amIInCheck(board, isWhiteTeam)
 	{ 
 		if( !possCoords ){ continue; }
 		if( (getPiece2(board, possCoords) === 'K') || (getPiece2(board, possCoords) === 'k') ){
-			TimeAmIInCheck += (performance.now() -Time3start);
 			return possCoords;
 		}
 	}
 	
 	// else
-	TimeAmIInCheck += (performance.now() -Time3start);
 	return false;
 }
 
