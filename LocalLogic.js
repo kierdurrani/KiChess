@@ -566,13 +566,6 @@ function selectSquare(coord){
 			// Update gamestate and gameextended state.
 			gamestate = legalMoves[coord].gamestate;
 			
-			//extendedState['Enpassant'] = false;
-			//for (const property in legalMoves[coord].extendedStateChange) {
-			//	
-			//	// iterate over all properties $key of the object
-			//	console.log("setting property " + property + " to value: " +  legalMoves[coord].extendedStateChange[property])
-			//	extendedState[property] = legalMoves[coord].extendedStateChange[property];
-			//}
 			gameMetaData.lastMovedPieceTo = coord;
 			gameMetaData.lastMovedPieceFrom = previouslySelectedSquare;
 			
@@ -582,7 +575,6 @@ function selectSquare(coord){
 			// Update turn 
 			turnTransition();
 			previouslySelectedSquare = null;
-			
 			
 		}else{
 			// Given they had a previously selected piece, they have not selcted a legal move for that peice.
