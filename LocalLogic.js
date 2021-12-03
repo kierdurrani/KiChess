@@ -1,4 +1,4 @@
-var gamestate = "________;________;________;________;________;________;________;________;|1,1111,__"; // This encodes turn, castling rights (a1,h1,a8,h8) and enpassanable pawn
+var gamestate = "________;________;________;________;________;________;________;________"; // This encodes turn, castling rights (a1,h1,a8,h8) and enpassanable pawn
 var extendedState = {
 	"isWhitesTurn": true,
 	// represent allowed castling options:
@@ -212,7 +212,7 @@ function getLegalMoves(coord, bstate, estate){
 	/////////////////////////////	MAIN LOGIC	///////////////////////////////////
 	if( piece == 'R' || piece == 'r' ){  		
 	
-	findAllMovesInLine(0,1);
+		findAllMovesInLine(0,1);
 		findAllMovesInLine(1,0);
 		findAllMovesInLine(0,-1);
 		findAllMovesInLine(-1,0);
