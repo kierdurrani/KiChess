@@ -645,6 +645,17 @@ function renderBoard(state, highlightedSquares){
 			highlightMe.innerHTML = '<img src="assets/LastMovedPiece.png" height = 98px width = 98px, style = "opacity: 0.6"  >' +  highlightMe.innerHTML ;
 		}
 	}
+	
+	
+	var siteHeader = document.getElementById('chessboard');
+
+	siteHeader.style.offsetHeight ;
+	siteHeader.offsetHeight; // no need to store this anywhere, the reference is enough
+	siteHeader.style.display='';
+	// document.getElementById('chessboard').style.display = 'block';
+
+	// document.getElementById('chessboard').style.display = 'block';
+
 
 }
 function existsLegalMoves(gamestate, extendedState){
