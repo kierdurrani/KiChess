@@ -20,7 +20,6 @@ function makeMove(){
 	console.log("Score Estimate" + bestMoveAndScore.bestScore);
 	
 	var stringRep = bestMoveAndScore.bestState;
-	global = stringRep;
 	gamestate =  stringRep.split('|')[0];
 	extendedState =  JSON.parse(stringRep.split('|')[1]);
 	
@@ -34,7 +33,6 @@ var AllAnalysedStatesClone = {};
 // best move is the one with the best score.
 // the score(state, depth) is defined as the best move of the children to depth - 1
 // returns {bestState: bestState, bestScore: bestScore}
-var global;
 function bestMoveToDepth(startingState, depth){
 
 	// See if state has already been analsed. If not, create the state in AllAnalysedStates
@@ -89,7 +87,7 @@ function getAnalysedStates(stateString){
 		let foundState = AllAnalysedStates[hashCode].find(element => element.StateString === stateString );
 		return foundState;
 	}
-	// AnalysedState does not exist in the global list of AllAnalysedStates:
+	// AnalysedState does not exist in the list of AllAnalysedStates:
 	return null; 
 }
 function createOrGetAnalysedState(stateString){
@@ -172,8 +170,6 @@ function getAllChildStates(gamestate, extendedState){
 			var numberCoord =  (8 -  Math.floor(x / 9));
 			var currentPieceCoords = String.fromCharCode(letterCoord + 96) + numberCoord;
 			
-			// console.log("ABOUT TO CALL getLegalMoves WITH: " + currentPieceCoords);
-			global = gamestate;
 			let legalMoves = getLegalMoves(currentPieceCoords, gamestate, extendedState);
 			
 			for (const move of Object.keys(legalMoves)) {
@@ -185,9 +181,8 @@ function getAllChildStates(gamestate, extendedState){
 	}
 	return allPossibleMoves;
 }
-var global;
+
 function calculateMaterialScoreWrapper(totalstate){
-	global = totalstate;
 	var posGamestate  = totalstate.split('|')[0];
 	var posExtendedState = JSON.parse(totalstate.split('|')[1]);
 	return calculateMaterialScore(posGamestate, posExtendedState);
