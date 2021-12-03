@@ -1,7 +1,19 @@
 var maxDepth = 3;
 function makeMove(){
 	
-	AllAnalysedStates = {};
+	// Salvage subtree of states down the path we are going.
+	// AllAnalysedStates = {};
+	console.log("# States from end of last go: " + Object.keys(AllAnalysedStatesClone).length);
+	var totalCurrentState = gamestate + "|" + JSON.stringify(extendedState);
+	var currentStateAnal = getAnalysedStates(totalCurrentState);
+	if(currentStateAnal){
+		cloneAnalysedSubTree(currentStateAnal);
+	}
+	
+	AllAnalysedStates = AllAnalysedStatesClone;
+	AllAnalysedStatesClone = {};
+	console.log("# States salvaged: " + Object.keys(AllAnalysedStates).length);
+	
 	var bestMoveAndScore = bestMoveToDepth((gamestate + "|" + JSON.stringify(extendedState)), maxDepth);
 	
 	console.log("# States analysed: " + Object.keys(AllAnalysedStates).length);
@@ -17,6 +29,7 @@ function makeMove(){
 
 // Hashtable of lists of analysed States
 var AllAnalysedStates = {};
+var AllAnalysedStatesClone = {};
 
 // best move is the one with the best score.
 // the score(state, depth) is defined as the best move of the children to depth - 1
@@ -114,6 +127,25 @@ function createOrGetAnalysedState(stateString){
 	return AnalysedState;
 }
 
+function cloneAnalysedSubTree(rootState){
+	
+	//ChildStates is a lazily evaluated field. The childStates may or may not be analysed!
+	if(rootState.ChildStates){
+		for(var childState of rootState.ChildStates){
+			cloneAnalysedSubTree(createOrGetAnalysedState(childState));
+		}
+	}
+	
+	// Now insert the root node.
+	var hashCode = rootState.StateString.hashCode();
+	if(AllAnalysedStatesClone[hashCode]){
+		let existing = AllAnalysedStatesClone[hashCode].find(element => element.StateString === rootState.StateString );
+		if(existing){ return;}
+	}else{
+		AllAnalysedStatesClone[hashCode] = [];
+	}
+	AllAnalysedStatesClone[hashCode].push(rootState);
+}
 
 // Returns all states as a list in format: gamestate + "|" + JSON.stringify(extendedState);
 // getAllChildStates(stringRep.split('|')[0], JSON.parse(stringRep.split('|')[1])) 
@@ -153,15 +185,19 @@ function getAllChildStates(gamestate, extendedState){
 	}
 	return allPossibleMoves;
 }
-
+var global;
 function calculateMaterialScoreWrapper(totalstate){
+	global = totalstate;
 	var posGamestate  = totalstate.split('|')[0];
 	var posExtendedState = JSON.parse(totalstate.split('|')[1]);
 	return calculateMaterialScore(posGamestate, posExtendedState);
 }
 function calculateMaterialScore(gamestate, extendedState){
 	let score = 0;
+	// TODO, make faster so that extendedState is not necessary
 	
+	// var isWhitesTurn =  (gamestate[89] === 't'); 
+
 	if(amIInCheck(gamestate, extendedState.isWhitesTurn)){
 		if(extendedState.isWhitesTurn){
 			score = 0;
