@@ -1,4 +1,4 @@
-var maxDepth = 3;
+var maxDepth = 4;
 function calculateBestMove(gamestate, extendedState){
 
 	// Salvage subtree of states down the path we are going.
@@ -81,26 +81,22 @@ function bestMoveToDepth(startingState, depth){
 }
 
 function getAnalysedStates(stateString){
-	var hashCode = stateString.hashCode();
+	var hashCode = stateString;
 	if(AllAnalysedStates[hashCode]){
-		let foundState = AllAnalysedStates[hashCode].find(element => element.StateString === stateString );
-		return foundState;
+		return AllAnalysedStates[hashCode];
 	}
 	// AnalysedState does not exist in the list of AllAnalysedStates:
 	return null; 
 }
 function createOrGetAnalysedState(stateString){
 //	console.log(stateString);
-	var hashCode = stateString.hashCode();
+	var hashCode = stateString;
 	if(AllAnalysedStates[hashCode]){
 		
-		let existing = AllAnalysedStates[hashCode].find(element => element.StateString === stateString );
-		if(existing){ return existing;}
+		return AllAnalysedStates[hashCode];
+
 		
-	}else{
-		AllAnalysedStates[hashCode] = [];
 	}
-	
 	var baseScore = calculateMaterialScoreWrapper(stateString);
 	
 	var AnalysedState = {
@@ -119,7 +115,7 @@ function createOrGetAnalysedState(stateString){
 		}
 		AnalysedState.ChildStates = [stateString]; // This is just to prevent 
 	}
-	AllAnalysedStates[hashCode].push(AnalysedState);
+	AllAnalysedStates[hashCode] = AnalysedState;
 	
 	return AnalysedState;
 }
@@ -135,14 +131,12 @@ function cloneAnalysedSubTree(rootState, depthLimit){
 	}
 	
 	// Now insert the root node.
-	var hashCode = rootState.StateString.hashCode();
+	var hashCode = rootState.StateString; //.hashCode();
 	if(AllAnalysedStatesClone[hashCode]){
-		let existing = AllAnalysedStatesClone[hashCode].find(element => element.StateString === rootState.StateString );
-		if(existing){ return;}
-	}else{
-		AllAnalysedStatesClone[hashCode] = [];
+
+		return;
 	}
-	AllAnalysedStatesClone[hashCode].push(rootState);
+	AllAnalysedStatesClone[hashCode] = rootState;
 }
 
 // Returns all states as a list in format: gamestate + "|" + JSON.stringify(extendedState);
@@ -194,6 +188,7 @@ function calculateMaterialScoreWrapper(totalstate){
 	CalculateMaterial += (Performanceendtime - PerformancestartTimeMaterial);
 	return calculateMaterialScore(posGamestate, posExtendedState);
 }
+
 function calculateMaterialScore(gamestate, extendedState){
 	var time2start = performance.now()
 	let score = 0;
