@@ -36,8 +36,11 @@ function transCoords(coord, y, x){
 
 function getGameState(){ return gamestate;}
 function getExtendedState(){ return extendedState;}
+
+var TimeAmIInCheck = 0;
 function amIInCheck(board, isWhiteTeam)
 {
+	var Time3start = performance.now()
 	// Overview of logic: start from the king and see if the king is in vision by an enemy piece
 	// team == true -> white 
 	
@@ -56,13 +59,14 @@ function amIInCheck(board, isWhiteTeam)
 		var iter = 1;
 		var newCoords = transCoords(startingCoord, x * iter, y * iter);
 		while( newCoords ){
-			if(getPiece2(board, newCoords) !== '_'){
-			
-				var visiblePiece = getPiece2(board, newCoords);
-				
+
+			var visiblePiece = getPiece2(board, newCoords);
+			if(visiblePiece !== '_'){
+					
 				var isWhitePiece = (visiblePiece === visiblePiece.toLowerCase());
 				var isEnemyPiece = !(isWhitePiece === isWhiteTeam);
 				
+			
 				if(isEnemyPiece){
 					return {piece: visiblePiece, coords: newCoords};
 				}else{
@@ -72,6 +76,7 @@ function amIInCheck(board, isWhiteTeam)
 			iter++;
 			newCoords = transCoords(kingsCoords, x * iter, y * iter);
 		}	
+	
 		return null;
 	}
 	
@@ -127,14 +132,15 @@ function amIInCheck(board, isWhiteTeam)
 	{ 
 		if( !possCoords ){ continue; }
 		if( (getPiece2(board, possCoords) === 'K') || (getPiece2(board, possCoords) === 'k') ){
+			TimeAmIInCheck += (performance.now() -Time3start);
 			return possCoords;
 		}
 	}
 	
 	// else
+	TimeAmIInCheck += (performance.now() -Time3start);
 	return false;
 }
-
 
 function getLegalMoves(coord, bstate, estate){
 	
@@ -147,16 +153,6 @@ function getLegalMoves(coord, bstate, estate){
 	}else{
 		var gamestate  = bstate;
 		var extendedState = estate;
-	}
-	
-	
-	function getPiece2(board, coordinate){
-		// console.log("getPiece2: " + board + coordinate);
-		var columnIndex = coordinate[0].charCodeAt(0) - 97; // Col is given by leading letter. This formula converts a char into its corresponding integer from 0-7
-		var rowContents = board.split(';')[8 - coordinate[1]]; // Rows are enumerated 'backwards' in the gamestate to the coords.
-		var cellContent = rowContents[columnIndex];      
-		
-		return cellContent;
 	}
 	
 	var piece = getPiece2(gamestate, coord);
@@ -475,22 +471,21 @@ function markLegalMoves(coord){
 
 function getPiece(coordinate){
 
-	var columnIndex = coordinate[0].charCodeAt(0) - 97; // Col is given by leading letter. This formula converts a char into its corresponding integer from 0-7
-	var rowContents = gamestate.split(";")[8 - coordinate[1]]; // Rows are enumerated 'backwards' in the gamestate to the coords.
-	
-	var cellContent = rowContents[columnIndex];      
-	
-	return cellContent;
+	// Rows are enumerated 'backwards' and are 9 chars long due to colon seperator.
+	// Cols are determined by the leading letter. This formula converts a char into its corresponding integer from 0-7
+
+	var index = 9 * (8 - coordinate[1]) + coordinate.charCodeAt(0) - 97;
+
+	return gamestate[index];
 }
 
 function getPiece2(board, coordinate){
 
-	var columnIndex = coordinate[0].charCodeAt(0) - 97; // Col is given by leading letter. This formula converts a char into its corresponding integer from 0-7
-	var rowContents = board.split(';')[8 - coordinate[1]]; // Rows are enumerated 'backwards' in the gamestate to the coords.
-	
-	var cellContent = rowContents[columnIndex];      
-	
-	return cellContent;
+	// Rows are enumerated 'backwards' and are 9 chars long due to colon seperator.
+	// Cols are determined by the leading letter. This formula converts a char into its corresponding integer from 0-7
+	var index = 9 * (8 - coordinate[1]) + coordinate.charCodeAt(0) - 97;
+
+	return board[index];
 }
 
 // UI related variables:

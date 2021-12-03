@@ -1,6 +1,6 @@
 var maxDepth = 3;
 function calculateBestMove(gamestate, extendedState){
-	
+
 	// Salvage subtree of states down the path we are going.
 	// AllAnalysedStates = {};
 	console.log("# States from end of last go: " + Object.keys(AllAnalysedStatesClone).length);
@@ -182,12 +182,20 @@ function getAllChildStates(gamestate, extendedState){
 	return allPossibleMoves;
 }
 
+// performance metrics
+var CalculateMaterial = 0;
+var CalculateMaterial2 = 0;
 function calculateMaterialScoreWrapper(totalstate){
+	var PerformancestartTimeMaterial = performance.now();
 	var posGamestate  = totalstate.split('|')[0];
 	var posExtendedState = JSON.parse(totalstate.split('|')[1]);
+	
+	var Performanceendtime = performance.now();
+	CalculateMaterial += (Performanceendtime - PerformancestartTimeMaterial);
 	return calculateMaterialScore(posGamestate, posExtendedState);
 }
 function calculateMaterialScore(gamestate, extendedState){
+	var time2start = performance.now()
 	let score = 0;
 	// TODO, make faster so that extendedState is not necessary
 	
@@ -239,6 +247,8 @@ function calculateMaterialScore(gamestate, extendedState){
 			default:
 		}
 	}
+	var time2end = performance.now();
+	CalculateMaterial2 += ( time2end -time2start );
 	return score;
 }
 
