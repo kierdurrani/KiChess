@@ -10,9 +10,7 @@ var extendedState = {
 }
 var gameMetaData = {
 	"isWhiteCPU": false,
-	"isBlackCPU": true,
-	"lastMovedPieceFrom": null,
-	"lastMovedPieceTo": null
+	"isBlackCPU": true
 }
 
 function calculateBoardState(state, coord, piece){
@@ -495,6 +493,7 @@ function getPiece2(board, coordinate){
 	return cellContent;
 }
 
+// UI related variables:
 var previouslySelectedSquare = null;
 var promotionContext = false;
 function selectSquare(coord){
@@ -510,7 +509,7 @@ function selectSquare(coord){
 		// TODO, have this work if you click off of the board all together.
 	}
 	
-	
+
 	if( gameMetaData.isWhiteCPU && (extendedState.isWhitesTurn)){ console.log("White to play. Waiting for CPU"); return;} 
 	if( gameMetaData.isBlackCPU && !(extendedState.isWhitesTurn)){ console.log("Black to play. Waiting for CPU"); return;} 
 	
@@ -566,12 +565,12 @@ function selectSquare(coord){
 			// Update gamestate and gameextended state.
 			gamestate = legalMoves[coord].gamestate;
 			
-			gameMetaData.lastMovedPieceTo = coord;
-			gameMetaData.lastMovedPieceFrom = previouslySelectedSquare;
-			
 			extendedState = legalMoves[coord].extendedState;
-			renderBoard(gamestate);
 			
+			console.log("rendering");
+			renderBoard(gamestate, (coord + ';' + previouslySelectedSquare));
+			console.log("rendered");
+
 			// Update turn 
 			turnTransition();
 			previouslySelectedSquare = null;
@@ -600,11 +599,10 @@ function startGame(){
 		"Enpassant": false
 	}
 	gamestate = startingState;
-	renderBoard(startingState);
-
+	renderBoard(startingState, null);
 }
 
-function renderBoard(state){
+function renderBoard(state, highlightedSquares){
 
 	var rows = state.split(';');
 	var chessBoard = document.getElementsByClassName("square");
@@ -642,20 +640,20 @@ function renderBoard(state){
 		var kingsCoords = String.fromCharCode(letterCoord + 96) + numberCoord;
 		
 		var checkSquare =  document.getElementById(kingsCoords);
-		checkSquare.innerHTML = '<img src="assets/Check.png" height = 97px width = 97px, style = "opacity: 1"  >' +  checkSquare.innerHTML ;
+		checkSquare.innerHTML = '<img src="assets/Check.png" height = 98px width = 98px, style = "opacity: 1"  >' +  checkSquare.innerHTML ;
 		
 		// var checkSquare2 =  document.getElementById(isInCheck);
 		// checkSquare2.innerHTML = '<img src="assets/Check.png"height = 97px width = 97px  >' +  checkSquare2.innerHTML ;
 	}
 	
-	
-	try{
-		var movedFrom =  document.getElementById(gameMetaData.lastMovedPieceFrom);
-		movedFrom.innerHTML = '<img src="assets/LastMovedPiece.png" height = 97px width = 97px, style = "opacity: 0.6"  >' +  movedFrom.innerHTML ;
-		var movedTo =  document.getElementById(gameMetaData.lastMovedPieceTo);
-		movedTo.innerHTML = '<img src="assets/LastMovedPiece.png" height = 97px width = 97px, style = "opacity: 0.6"  >' +  movedTo.innerHTML ;
-	}catch{}
-	
+	// Highlight squares.
+	if(highlightedSquares){
+		var highlightCoords = highlightedSquares.split(';');
+		for(var coords of highlightCoords){
+			var highlightMe = document.getElementById(coords);
+			highlightMe.innerHTML = '<img src="assets/LastMovedPiece.png" height = 98px width = 98px, style = "opacity: 0.6"  >' +  highlightMe.innerHTML ;
+		}
+	}
 
 }
 function existsLegalMoves(gamestate, extendedState){
@@ -700,16 +698,35 @@ function turnTransition(){
 			checkmate(extendedState.isWhitesTurn);
 			return;
 		}else{
-			stalemate;
+			stalemate();
 			return;
 		}
 	}
 	
+	// CPU move. Process move
+	if( (gameMetaData.isWhiteCPU &&  (extendedState.isWhitesTurn)) || (gameMetaData.isBlackCPU && !(extendedState.isWhitesTurn))){ 
+		
+		var totalstate = calculateBestMove(gamestate, extendedState); 
 	
-	// CPU move
-	if( gameMetaData.isWhiteCPU &&  (extendedState.isWhitesTurn)){ makeMove(); turnTransition();} 
-	if( gameMetaData.isBlackCPU && !(extendedState.isWhitesTurn)){ makeMove(); turnTransition();} 
-	
+		// Work out which coordinates have changed.
+		var changedCoords = [];
+		for (let x = 0; x < 72 ; x++) {
+			if(totalstate.gamestate[x] !== gamestate[x]){
+				var letterCoord =  (x % 9) + 1 ;
+				var numberCoord =  (8 -  Math.floor(x / 9));
+				var currentPieceCoords = String.fromCharCode(letterCoord + 96) + numberCoord;
+				changedCoords.push( currentPieceCoords);
+			}
+		}
+		changedCoords = changedCoords.join(';');
+
+		gamestate = totalstate.gamestate;
+		extendedState = totalstate.extendedState;
+
+		renderBoard(gamestate, changedCoords);
+		turnTransition();
+	} 
+
 	return
 	
 	// END TODO 
@@ -717,13 +734,16 @@ function turnTransition(){
 function checkmate(loosingTeamIsWhite){
 	if(loosingTeamIsWhite){
 		console.log('Black won!');
+		document.body.innerHTML += '<p> Black Won!</p>';
 	}else{
 		console.log('White won!');
+		document.body.innerHTML += '<p> White Won!</p>';
 	}
 	
 }
 function stalemate(){
-	Console.log("stalemate!")
+	Console.log("stalemate!");
+	document.body = document.body.innerHTML += '<p> Stalemate!</p>';
 }
 function promotePawn(newPiece){
 	
@@ -739,10 +759,10 @@ function promotePawn(newPiece){
 	gamestate = calculateBoardState(gamestate, newSquare, newPiece);
 	gamestate = calculateBoardState(gamestate, previousPawnSquare, "_");
 	
-	gameMetaData.lastMovedPieceTo = previousPawnSquare;
-	gameMetaData.lastMovedPieceFrom = newSquare;
+	// gameMetaData.lastMovedPieceTo = previousPawnSquare;
+	// gameMetaData.lastMovedPieceFrom = newSquare;
 	
-	renderBoard(gamestate);
+	renderBoard(gamestate, (previousPawnSquare + ';' + newSquare));
 	extendedState.isWhitesTurn = !(extendedState.isWhitesTurn);
 	turnTransition();
 	 

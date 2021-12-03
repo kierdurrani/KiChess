@@ -1,5 +1,5 @@
 var maxDepth = 3;
-function makeMove(){
+function calculateBestMove(gamestate, extendedState){
 	
 	// Salvage subtree of states down the path we are going.
 	// AllAnalysedStates = {};
@@ -7,7 +7,7 @@ function makeMove(){
 	var totalCurrentState = gamestate + "|" + JSON.stringify(extendedState);
 	var currentStateAnal = getAnalysedStates(totalCurrentState);
 	if(currentStateAnal){
-		cloneAnalysedSubTree(currentStateAnal);
+		cloneAnalysedSubTree(currentStateAnal, maxDepth);
 	}
 	
 	AllAnalysedStates = AllAnalysedStatesClone;
@@ -20,10 +20,9 @@ function makeMove(){
 	console.log("Score Estimate" + bestMoveAndScore.bestScore);
 	
 	var stringRep = bestMoveAndScore.bestState;
-	gamestate =  stringRep.split('|')[0];
-	extendedState =  JSON.parse(stringRep.split('|')[1]);
-	
-	renderBoard(gamestate);
+
+	// renderBoard(gamestate);
+	return {gamestate:  stringRep.split('|')[0], extendedState: JSON.parse(stringRep.split('|')[1])};
 }
 
 // Hashtable of lists of analysed States
@@ -125,12 +124,13 @@ function createOrGetAnalysedState(stateString){
 	return AnalysedState;
 }
 
-function cloneAnalysedSubTree(rootState){
-	
+function cloneAnalysedSubTree(rootState, depthLimit){
+	if(depthLimit < 0 ){ return null;} // prevents loops
+
 	//ChildStates is a lazily evaluated field. The childStates may or may not be analysed!
 	if(rootState.ChildStates){
 		for(var childState of rootState.ChildStates){
-			cloneAnalysedSubTree(createOrGetAnalysedState(childState));
+			cloneAnalysedSubTree(createOrGetAnalysedState(childState), depthLimit - 1);
 		}
 	}
 	
