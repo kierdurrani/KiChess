@@ -645,18 +645,6 @@ function renderBoard(state, highlightedSquares){
 			highlightMe.innerHTML = '<img src="assets/LastMovedPiece.png" height = 98px width = 98px, style = "opacity: 0.6"  >' +  highlightMe.innerHTML ;
 		}
 	}
-	
-	
-	var siteHeader = document.getElementById('chessboard');
-
-	siteHeader.style.offsetHeight ;
-	siteHeader.offsetHeight; // no need to store this anywhere, the reference is enough
-	siteHeader.style.display='';
-	// document.getElementById('chessboard').style.display = 'block';
-
-	// document.getElementById('chessboard').style.display = 'block';
-
-
 }
 function existsLegalMoves(gamestate, extendedState){
 	
@@ -706,28 +694,29 @@ function turnTransition(){
 	}
 	
 	// CPU move. Process move
-	if( (gameMetaData.isWhiteCPU &&  (extendedState.isWhitesTurn)) || (gameMetaData.isBlackCPU && !(extendedState.isWhitesTurn))){ 
-		
-		var totalstate = calculateBestMove(gamestate, extendedState); 
-	
-		// Work out which coordinates have changed.
-		var changedCoords = [];
-		for (let x = 0; x < 72 ; x++) {
-			if(totalstate.gamestate[x] !== gamestate[x]){
-				var letterCoord =  (x % 9) + 1 ;
-				var numberCoord =  (8 -  Math.floor(x / 9));
-				var currentPieceCoords = String.fromCharCode(letterCoord + 96) + numberCoord;
-				changedCoords.push( currentPieceCoords);
+	setTimeout( async function(){
+		if( (gameMetaData.isWhiteCPU &&  (extendedState.isWhitesTurn)) || (gameMetaData.isBlackCPU && !(extendedState.isWhitesTurn))){ 
+			
+			var totalstate =  await calculateBestMove(gamestate, extendedState); 
+
+			// Work out which coordinates have changed.
+			var changedCoords = [];
+			for (let x = 0; x < 72 ; x++) {
+				if(totalstate.gamestate[x] !== gamestate[x]){
+					var letterCoord =  (x % 9) + 1 ;
+					var numberCoord =  (8 -  Math.floor(x / 9));
+					var currentPieceCoords = String.fromCharCode(letterCoord + 96) + numberCoord;
+					changedCoords.push( currentPieceCoords);
+				}
 			}
-		}
-		changedCoords = changedCoords.join(';');
+			changedCoords = changedCoords.join(';');
 
-		gamestate = totalstate.gamestate;
-		extendedState = totalstate.extendedState;
+			gamestate = totalstate.gamestate;
+			extendedState = totalstate.extendedState;
 
-		renderBoard(gamestate, changedCoords);
-		turnTransition();
-	} 
+			renderBoard(gamestate, changedCoords);
+			turnTransition();
+	}} , 60)
 
 	return
 	
