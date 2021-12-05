@@ -177,46 +177,34 @@ function getAllChildStates(gamestate, extendedState){
 }
 
 // performance metrics
-var CalculateMaterial = 0;
-var CalculateMaterial2 = 0;
+
 function calculateMaterialScoreWrapper(totalstate){
-	var PerformancestartTimeMaterial = performance.now();
 	var posGamestate  = totalstate.split('|')[0];
 	var posExtendedState = JSON.parse(totalstate.split('|')[1]);
-	
-	var Performanceendtime = performance.now();
-	CalculateMaterial += (Performanceendtime - PerformancestartTimeMaterial);
+
 	return calculateMaterialScore(posGamestate, posExtendedState);
 }
 
 function calculateMaterialScore(gamestate, extendedState){
-	var time2start = performance.now()
 	let score = 0;
-	// TODO, make faster so that extendedState is not necessary
+	// TODO, make faster so that extendedState is not necessary.
 	
-	// var isWhitesTurn =  (gamestate[89] === 't'); 
-
-	if(amIInCheck(gamestate, extendedState.isWhitesTurn)){
-		if(extendedState.isWhitesTurn){
-			score = 0;
-		}else{
-			score = 0;
-		}
+	// Determine whether in checkmate or in stalemate!
+	if(!existsLegalMoves(gamestate, extendedState)){
+		if(amIInCheck(gamestate, extendedState.isWhitesTurn)){
 		
-		// If in state/checkmate:
-		var legalMoves = existsLegalMoves(gamestate, extendedState);
-		if(!legalMoves){
-			if(amIInCheck(gamestate, extendedState.isWhitesTurn)){
-				// checkmate
-				if(extendedState.isWhitesTurn){ return -10000;
-				}else{ 							return +10000; }
-			}else{
-				// stalemate score is zero. This is a cludge to get the return code 
-				return 6969; 
-			}
+			// checkmate
+			if(extendedState.isWhitesTurn){ 
+				return -10000;
+			}else{ 							
+				return +10000; 
+			}				
+		}else{
+			// stalemate score is zero. This is a cludge to get the return code 
+			return 6969; 
 		}
 	}
-
+	
 	for (let x = 0; x < 72 ; x++) {
 		if(gamestate[x] === '_' | gamestate[x] === ';'  ){continue;}
 		switch(gamestate[x]) {
@@ -242,8 +230,6 @@ function calculateMaterialScore(gamestate, extendedState){
 			default:
 		}
 	}
-	var time2end = performance.now();
-	CalculateMaterial2 += ( time2end -time2start );
 	return score;
 }
 
