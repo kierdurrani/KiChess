@@ -24,7 +24,7 @@ function calculateBoardState(state, coord, piece){
 }
 
 function transCoords(coord, y, x){
-	var newRank = coord[0].charCodeAt(0) - 96 + y; 
+	var newRank = coord.charCodeAt(0) - 96 + y; 
 	var newCol  = Number(coord[1]) + x;
 
 	if ( newCol < 1 ||  newCol > 8 ||  newRank < 1 || newRank > 8){
@@ -32,6 +32,11 @@ function transCoords(coord, y, x){
 	}else{
 		 return(String.fromCharCode(newRank + 96) + newCol);
 	}
+}
+
+function HYPERtransCoords(coord, y, x){
+
+	
 }
 
 function getGameState(){ return gamestate;}
