@@ -1,5 +1,5 @@
 var gamestate = "________;________;________;________;________;________;________;________;|11111__"; // Section after '|' Encodes turn, castling rights (a1,h1,a8,h8) and enpassanable pawn
-String.prototype.isWhitesTurn = function hash() {
+String.prototype.isWhitesTurn = function isItWhitesTurn() {
 	return (this[73] === '1');
 };
   
@@ -31,16 +31,6 @@ function transCoords(coord, y, x){
 
 function getGameState(){ return gamestate;}
 
-var timeCheckCheck = 0;
-function amIInCheck3(board, isWhiteTeam)
-{
-	var t2 = performance.now();
-	var x =  amIInCheck3(board, isWhiteTeam);
-	timeCheckCheck +=  performance.now() - t2;
-	return x;
-}
-
-
 function amIInCheck(board, isWhiteTeam)
 {
 	
@@ -49,26 +39,19 @@ function amIInCheck(board, isWhiteTeam)
 
 	// Get coordinates of the king.
 	var kingIndex = isWhiteTeam ? board.indexOf('k') : board.indexOf('K'); // position of king in string
-	// console.log("index: " + kingIndex);
-	
 	var kingX =  (kingIndex % 9) + 1 ;
 	var kingY =  (8 -  Math.floor(kingIndex / 9));
-	
-	var letterCoord =  (kingIndex % 9) + 1 ;
-	var numberCoord =  (8 -  Math.floor(kingIndex / 9));
-	var kingsCoords = String.fromCharCode(letterCoord + 96) + numberCoord;
-	// console.log("I think the king is at: " + kingsCoords);
 
+    function getPieceRelativeToKing(dy, dx){
 
-    function transKingCoords(dy, dx){
         var newY = kingY + dy; 
-        var newX = kingX + dx;
+		if ( newY < 1 ||  newY > 8 ){ return null;}
+        
+		var newX = kingX + dx;
+		if ( newX < 1 ||  newX > 8 ){ return null;}
     
-        if ( newY < 1 ||  newY > 8 ||  newX < 1 || newX > 8){
-            return null; // off the board
-        }else{
-             return "" + newY + newX; // forces result to be string
-        }
+        return board[9 * (8 - newY) + newX]; 
+        
     }
 
 	// Return the coordinates of an ENEMY PIECE (if any), at the end of the line (x,y) diagonal from startingCoord
@@ -123,45 +106,38 @@ function amIInCheck(board, isWhiteTeam)
 	}
 	
 	// Threats from Pawns:
-	var directionOfThreateningPawn = (isWhiteTeam ? 1 : -1 );
-	
 	if(isWhiteTeam){
-		if( transCoords(kingsCoords, +1,  +1) && getPiece2(board, transCoords(kingsCoords, +1,  +1)) === 'P'){ return true; }
-		if( transCoords(kingsCoords, -1,  +1) && getPiece2(board, transCoords(kingsCoords, -1,  +1)) === 'P'){ return true; }
+		if( getPieceRelativeToKing( +1, +1) === 'P'){ return true; }
+		if( getPieceRelativeToKing( -1, +1) === 'P'){ return true; }
 	}else{
-		if( transCoords(kingsCoords, +1,  -1) && getPiece2(board, transCoords(kingsCoords, +1,  -1)) === 'p'){ return true; }
-		if( transCoords(kingsCoords, -1,  -1) && getPiece2(board, transCoords(kingsCoords, -1,  -1)) === 'p'){ return true; }
+		if( getPieceRelativeToKing( +1, -1) === 'p'){ return true; }
+		if( getPieceRelativeToKing( -1, -1) === 'p'){ return true; }
 	}
 
-	
 	// Threats from knights:
-	var possibleKnightCoords = [transCoords(kingsCoords, +1,  +2), transCoords(kingsCoords, +1,  -2), 
-								transCoords(kingsCoords, -1,  +2), transCoords(kingsCoords, -1,  -2), 
-								transCoords(kingsCoords, +2,  +1), transCoords(kingsCoords, +2,  -1), 
-								transCoords(kingsCoords, -2,  +1), transCoords(kingsCoords, -2,  -1)];		
-	for( var possCoords of possibleKnightCoords){
-		if( !possCoords ){ continue; } // Catch possible null value error here..
-		 
-		if(  isWhiteTeam   && (getPiece2(board, possCoords) === 'N') ){ return true; } 
-		if( (!isWhiteTeam) && (getPiece2(board, possCoords) === 'n') ){ return true; } 
-
+	var possibleKnightCoords = [getPieceRelativeToKing( +1,  +2), getPieceRelativeToKing( +1,  -2), 
+								getPieceRelativeToKing( -1,  +2), getPieceRelativeToKing( -1,  -2), 
+								getPieceRelativeToKing( +2,  +1), getPieceRelativeToKing( +2,  -1), 
+								getPieceRelativeToKing( -2,  +1), getPieceRelativeToKing( -2,  -1)];		
+	
+    var EnemyKnight = isWhiteTeam ? 'N' : 'n';
+    for( var possibleEnemyKnight of possibleKnightCoords){				 
+		if(  possibleEnemyKnight === EnemyKnight ){ return true; } 
 	}
 	
 	// Finally, threats from king!
-	var allCoords = [transCoords(kingsCoords, +1, +1), transCoords(kingsCoords, +1, +0), transCoords(kingsCoords, +1, -1), transCoords(kingsCoords, +0, +1),	
-					 transCoords(kingsCoords, +0, -1), transCoords(kingsCoords, -1, -1), transCoords(kingsCoords, -1, +0), transCoords(kingsCoords, -1, +1) ];
+	var possibleEnemyKings = [getPieceRelativeToKing( +1, +1), getPieceRelativeToKing( +1, +0), getPieceRelativeToKing( +1, -1), getPieceRelativeToKing( +0, +1),	
+					 		getPieceRelativeToKing( +0, -1), getPieceRelativeToKing( -1, -1), getPieceRelativeToKing( -1, +0), getPieceRelativeToKing( -1, +1) ];
 
-	for(var possCoords of allCoords)
-	{ 
-		if( !possCoords ){ continue; }
-		if( (getPiece2(board, possCoords) === 'K') || (getPiece2(board, possCoords) === 'k') ){
-			return true;
-		}
-	}
+    var EnemyKing = isWhiteTeam ? 'K' : 'k';
+    for( var possibleEnemyKing of possibleEnemyKings){				 
+        if(  possibleEnemyKing === EnemyKing ){ return true; } 
+    }
 	
 	// else
 	return false;
 }
+
 
 function getLegalMoves(coord, bstate){
 

@@ -19,7 +19,7 @@ function calculateBestMove(gamestate){
 	
 	return bestMoveAndScore.bestState;
 }
-String.prototype.isWhitesTurn = function hash() {
+String.prototype.isWhitesTurn = function isItWhitesTurn() {
 	 return (this[73] === '1');
 };
 
