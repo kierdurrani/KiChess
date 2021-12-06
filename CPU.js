@@ -39,7 +39,7 @@ function bestMoveToDepth(startingState, depth){
 	if(analysedStartingState.Depth >= depth){
 		// This state has already been analysed to sufficient depth. So just return the already calculated best move.
 		// (Also catches check and stalemates, since their depth is set to inf).
-		return {bestState: analysedStartingState.BestChildState, bestScore: analysedStartingState.DeepScore};
+		return {bestState: analysedStartingState.BestChild, bestScore: analysedStartingState.Score};
 	}
 	
 	global = analysedStartingState;
@@ -54,28 +54,28 @@ function bestMoveToDepth(startingState, depth){
 		if(analysedPossState.Depth < depth){
 			// we have not analysed this state to sufficient depth, so analyse with recursive call!
 			var moveAndScore = bestMoveToDepth(possState, (depth - 1));
-			analysedPossState.DeepScore = moveAndScore.bestScore;
-			analysedPossState.BestChildState = moveAndScore.bestState;
+			analysedPossState.Score = moveAndScore.bestScore;
+			analysedPossState.BestChild = moveAndScore.bestState;
 		}
 		
 		// Now we can be sure that we have already analysed this state to sufficient depth. Now we simply min_max
-		if(analysedPossState.StateString.isWhitesTurn()){ // this is a quick and dirty equivalent to - if(extendedState.isWhitesTurn)
+		if(analysedPossState.State.isWhitesTurn()){ // this is a quick and dirty equivalent to - if(extendedState.isWhitesTurn)
 			// white wants to find highest score;
-			if( (analysedPossState.DeepScore < bestScore) || (bestScore == null) ){
-				bestScore = analysedPossState.DeepScore;
-				bestState = analysedPossState.StateString;
+			if( (analysedPossState.Score < bestScore) || (bestScore == null) ){
+				bestScore = analysedPossState.Score;
+				bestState = analysedPossState.State;
 			}
 		}else{
 			// black wants to find lowest score;
-			if( (analysedPossState.DeepScore > bestScore) || (bestScore == null) ){
-				bestScore = analysedPossState.DeepScore;
-				bestState = analysedPossState.StateString;
+			if( (analysedPossState.Score > bestScore) || (bestScore == null) ){
+				bestScore = analysedPossState.Score;
+				bestState = analysedPossState.State;
 			}
 		}
 	}
 	analysedStartingState.Depth = depth;
-	analysedStartingState.BestChildState = bestState;
-	analysedStartingState.DeepScore = bestScore;
+	analysedStartingState.BestChild = bestState;
+	analysedStartingState.Score = bestScore;
 	return {bestState: bestState, bestScore: bestScore};
 }
 
@@ -97,18 +97,18 @@ function createOrGetAnalysedState(stateString){
 	var baseScore = calculateMaterialScore(stateString);
 	
 	var AnalysedState = {
-		DeepScore: baseScore,
+		Score: baseScore,
 		Depth: 0,
 		ChildStates: null, 
-		BestChildState: null,
-		StateString: stateString
+		BestChild: null,
+		State: stateString
 	}
 	if( (baseScore > 1000) || (baseScore < -1000) ){
 		// indicates checkmate/stalemate. 
 		AnalysedState.Depth = 1000000;
 		if(baseScore === 6969){
 			// stalemate special code.
-			AnalysedState.DeepScore = 0;
+			AnalysedState.Score = 0;
 		}
 		AnalysedState.ChildStates = [stateString]; // Cant remember why this works. Probably prevents trying to find non existent child states.
 	}
@@ -128,7 +128,7 @@ function cloneAnalysedSubTree(rootState, depthLimit){
 	}
 	
 	// Now insert the root node.
-	var hashCode = rootState.StateString; //.hashCode();
+	var hashCode = rootState.State; //.hashCode();
 	if(AllAnalysedStatesClone[hashCode]){
 
 		return;
