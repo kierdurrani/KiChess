@@ -141,14 +141,17 @@ function amIInCheck(board, isWhiteTeam)
 
 function getLegalMoves(coord, bstate){
 
+	
 	if(bstate == null){
 		// use global values if not passed in
 		console.log("get existing");
-		var gamestate  = getGameState();		
+		var gamestate = getGameState();		
 	}else{
-		var gamestate  = bstate;
+		var gamestate = bstate;
 	}
 	
+	var isItWhitesTurn = gamestate.isWhitesTurn(); // cache this for speed
+
 	var piece = getPiece2(gamestate, coord);
 	var CandidateLegalMoves = {};
 	
@@ -164,7 +167,7 @@ function getLegalMoves(coord, bstate){
 		if(piece === "_") {return false;}
 		
 		var isWhitePiece  = (piece == piece.toLowerCase());
-		return !(isWhitePiece === gamestate.isWhitesTurn());
+		return !(isWhitePiece === isItWhitesTurn);
 	}
 	
 	var boardWithDefaultExtState = gamestate.substring(0, 72) + '|' + getDefaultExtendedState(); 
@@ -176,7 +179,7 @@ function getLegalMoves(coord, bstate){
 		}
 		
 		// This changes whose turn it is but keeps the rest of the gamestate the same.
-		defaultExtendedState = (gamestate.isWhitesTurn() ? '0' : '1') + gamestate.substring(74); 
+		defaultExtendedState = (isItWhitesTurn ? '0' : '1') + gamestate.substring(74); 
 		return defaultExtendedState.substring(0, 78) + '__'; // This clones the string and removes previously enpassantable pawn
 	}
 	
@@ -353,13 +356,13 @@ function getLegalMoves(coord, bstate){
 					if( (getPiece2(gamestate, 'b1')==='_') && (getPiece2(gamestate, 'c1')==='_') && (getPiece2(gamestate, 'd1')==='_') ){ 
 						// king starts at E1, and moves to B1. Rook starts at A1 and finishes at B1
 						// Verify not initially in check, and all intermediate squares are not threatened.
-						if( ! amIInCheck(gamestate, gamestate.isWhitesTurn()) ){
+						if( ! amIInCheck(gamestate, isItWhitesTurn) ){
 						
 							var intState1 = calculateBoardState(calculateBoardState(gamestate, 'e1', '_'), 'd1', 'k');
-							if( !amIInCheck(intState1, gamestate.isWhitesTurn()) ){
+							if( !amIInCheck(intState1, isItWhitesTurn) ){
 								
 								var intState2 = calculateBoardState(calculateBoardState(intState1, 'd1', '_'), 'c1', 'k');
-								if( !amIInCheck(intState2, gamestate.isWhitesTurn()) ){
+								if( !amIInCheck(intState2, isItWhitesTurn) ){
 									
 									var intState3 = calculateBoardState(calculateBoardState(intState2, 'c1', '_'), 'b1', 'k'); // no need to check this state 
 									var finalState = calculateBoardState(calculateBoardState(intState3, 'a1', '_'), 'c1', 'r'); // This gets checked later
@@ -380,10 +383,10 @@ function getLegalMoves(coord, bstate){
 					if( (getPiece2(gamestate, 'f1')==='_') && (getPiece2(gamestate, 'g1')==='_')  ){ 
 						// king starts at e1, and moves to g1. Rook starts at h1 and finishes at f1
 						// Verify not initially in check, and all intermediate squares are not threatened.
-						if( ! amIInCheck(gamestate, gamestate.isWhitesTurn()) ){
+						if( ! amIInCheck(gamestate, isItWhitesTurn) ){
 						
 							var intState1 = calculateBoardState(calculateBoardState(gamestate, 'e1', '_'), 'f1', 'k');
-							if( !amIInCheck(intState1, gamestate.isWhitesTurn()) ){
+							if( !amIInCheck(intState1, isItWhitesTurn) ){
 								
 								var intState2 = calculateBoardState(calculateBoardState(intState1, 'f1', '_'), 'g1', 'k'); // no need to check this state 
 								var finalState = calculateBoardState(calculateBoardState(intState2, 'h1', '_'), 'f1', 'r'); // This gets checked later
@@ -403,7 +406,7 @@ function getLegalMoves(coord, bstate){
 					if( (getPiece2(gamestate, 'b8')==='_') && (getPiece2(gamestate, 'c8')==='_') && (getPiece2(gamestate, 'd8')==='_') ){ 
 						// king starts at E1, and moves to B1. Rook starts at A1 and finishes at B1
 						// Verify not initially in check, and all intermediate squares are not threatened.
-						if( ! amIInCheck(gamestate, gamestate.isWhitesTurn()) ){
+						if( ! amIInCheck(gamestate, isItWhitesTurn) ){
 						
 							var intState1 = calculateBoardState(calculateBoardState(gamestate, 'e8', '_'), 'd8', 'K');
 							if( !amIInCheck(intState1, intState1.isWhitesTurn()) ){
@@ -429,10 +432,10 @@ function getLegalMoves(coord, bstate){
 					if( (getPiece2(gamestate, 'f8')==='_') && (getPiece2(gamestate, 'g8')==='_')  ){ 
 						// king starts at e8, and moves to g8. Rook starts at h8 and finishes at f8
 						// Verify not initially in check, and all intermediate squares are not threatened.
-						if( ! amIInCheck(gamestate, gamestate.isWhitesTurn()) ){
+						if( ! amIInCheck(gamestate, isItWhitesTurn) ){
 						
 							var intState1 = calculateBoardState(calculateBoardState(gamestate, 'e8', '_'), 'f8', 'K');
-							if( !amIInCheck(intState1, gamestate.isWhitesTurn()) ){
+							if( !amIInCheck(intState1, isItWhitesTurn) ){
 								
 								var intState2 = calculateBoardState(calculateBoardState(intState1, 'f8', '_'), 'g8', 'K'); // no need to check this state 
 								var finalState = calculateBoardState(calculateBoardState(intState2, 'h8', '_'), 'f8', 'R'); // This gets checked later
@@ -469,7 +472,7 @@ function getLegalMoves(coord, bstate){
 	
 	// Validate moves are not in checks
 	for (const move of Object.keys(CandidateLegalMoves)){ 
-		if(amIInCheck( CandidateLegalMoves[move], gamestate.isWhitesTurn())){
+		if(amIInCheck( CandidateLegalMoves[move], isItWhitesTurn)){
 			delete CandidateLegalMoves[move];
 		}
 	}
