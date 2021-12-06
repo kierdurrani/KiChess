@@ -708,28 +708,7 @@ function turnTransition(){
 			return;
 		}
 	}
-	
-	if( (gameMetaData.isWhiteCPU &&  (gamestate.isWhitesTurn())) || (gameMetaData.isBlackCPU && !(gamestate.isWhitesTurn()))){ 
-			
-		var totalstate =   calculateBestMove(gamestate); 
 
-		// Work out which coordinates have changed.
-		var changedCoords = [];
-		for (let x = 0; x < 72 ; x++) {
-			if(totalstate[x] !== gamestate[x]){
-				var letterCoord =  (x % 9) + 1 ;
-				var numberCoord =  (8 -  Math.floor(x / 9));
-				var currentPieceCoords = String.fromCharCode(letterCoord + 96) + numberCoord;
-				changedCoords.push( currentPieceCoords);
-			}
-		}
-		changedCoords = changedCoords.join(';');
-
-		gamestate = totalstate;
-
-		renderBoard(gamestate, changedCoords);
-		turnTransition();
-	}
 	// CPU move. Process move
 	setTimeout( async function(){
 		if( (gameMetaData.isWhiteCPU &&  (gamestate.isWhitesTurn())) || (gameMetaData.isBlackCPU && !(gamestate.isWhitesTurn()))){ 
@@ -748,11 +727,11 @@ function turnTransition(){
 			}
 			changedCoords = changedCoords.join(';');
 
-			gamestate = totalstate.gamestate;
+			gamestate = totalstate;
 
 			renderBoard(gamestate, changedCoords);
 			turnTransition();
-	}} , 60)
+	}} , 20)
 
 	return
 	
