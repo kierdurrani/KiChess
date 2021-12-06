@@ -191,8 +191,10 @@ function calculateMaterialScore(gamestate){
 	}
 	
 	for (let x = 0; x < 72 ; x++) {
-		if(gamestate[x] === '_' | gamestate[x] === ';'  ){continue;}
 		switch(gamestate[x]) {
+			case '_':
+			case ';':
+				continue;
 			case 'p':	score = score + 1;
 			break;
 			case 'P':	score = score - 1;

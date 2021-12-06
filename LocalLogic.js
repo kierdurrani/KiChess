@@ -31,8 +31,19 @@ function transCoords(coord, y, x){
 
 function getGameState(){ return gamestate;}
 
+var timeCheckCheck = 0;
+function amIInCheck3(board, isWhiteTeam)
+{
+	var t2 = performance.now();
+	var x =  amIInCheck3(board, isWhiteTeam);
+	timeCheckCheck +=  performance.now() - t2;
+	return x;
+}
+
+
 function amIInCheck(board, isWhiteTeam)
 {
+	
 	// Overview of logic: start from the king and see if the king is in vision by an enemy piece
 	// team == true -> white 
 
@@ -40,65 +51,86 @@ function amIInCheck(board, isWhiteTeam)
 	var kingIndex = isWhiteTeam ? board.indexOf('k') : board.indexOf('K'); // position of king in string
 	// console.log("index: " + kingIndex);
 	
+	var kingX =  (kingIndex % 9) + 1 ;
+	var kingY =  (8 -  Math.floor(kingIndex / 9));
+	
 	var letterCoord =  (kingIndex % 9) + 1 ;
 	var numberCoord =  (8 -  Math.floor(kingIndex / 9));
 	var kingsCoords = String.fromCharCode(letterCoord + 96) + numberCoord;
 	// console.log("I think the king is at: " + kingsCoords);
 
+
+    function transKingCoords(dy, dx){
+        var newY = kingY + dy; 
+        var newX = kingX + dx;
+    
+        if ( newY < 1 ||  newY > 8 ||  newX < 1 || newX > 8){
+            return null; // off the board
+        }else{
+             return "" + newY + newX; // forces result to be string
+        }
+    }
+
 	// Return the coordinates of an ENEMY PIECE (if any), at the end of the line (x,y) diagonal from startingCoord
-	function getVisibleEnemyPiece(board, startingCoord, x, y){
-
+	function getVisibleEnemyToKing(x, y){
+		
 		var iter = 1;
-		var newCoords = transCoords(startingCoord, x * iter, y * iter);
-		while( newCoords ){
+		
+        var newX = kingX + x;
+        var newY = kingY + y;
+		
+        while( newX <= 8 && newY <= 8 && newX >= 1 && newY >= 1 ){
 
-			var visiblePiece = getPiece2(board, newCoords);
+            // Rows are enumerated 'backwards' and are 9 chars long due to colon seperator.
+			var visiblePiece = board[9 * (8 - newY) + newX]; 
+
 			if(visiblePiece !== '_'){
 					
-				var isWhitePiece = (visiblePiece === visiblePiece.toLowerCase());
+				var isWhitePiece =  (visiblePiece === visiblePiece.toLowerCase());
 				var isEnemyPiece = !(isWhitePiece === isWhiteTeam);
 				
-			
 				if(isEnemyPiece){
-					return {piece: visiblePiece, coords: newCoords};
+					return visiblePiece;
 				}else{
 					return null;
 				}
 			}
 			iter++;
-			newCoords = transCoords(kingsCoords, x * iter, y * iter);
+            var newX = kingX + iter * x;
+            var newY = kingY + iter * y;    
 		}	
-	
 		return null;
 	}
 	
 	// Evaluate Threats:
 	
-	// Threatened on diagonals:
-	var allVisibleDiagonals = [getVisibleEnemyPiece(board, kingsCoords, +1, +1), getVisibleEnemyPiece(board, kingsCoords, +1, -1), 
-							   getVisibleEnemyPiece(board, kingsCoords, -1, +1), getVisibleEnemyPiece(board, kingsCoords, -1, -1)];		
-	for( var visibleEnemy of allVisibleDiagonals){
+	// Threatened on diagonals (bishops/queens)
+	var allVisibleDiagonals = [getVisibleEnemyToKing( +1, +1), getVisibleEnemyToKing( +1, -1), 
+							   getVisibleEnemyToKing( -1, +1), getVisibleEnemyToKing( -1, -1)];		
+	
+    for( var visibleEnemy of allVisibleDiagonals){
 		if( !visibleEnemy ){ continue; } // Catch possible null value error here..
-		if( ['b','B','q','Q'].includes(visibleEnemy.piece) ){ return visibleEnemy.coords }
+		if( ['b','B','q','Q'].includes(visibleEnemy.piece) ){ return true; }
 	}
 	
-	// Threats vertically / horizontally
-	var allVisibleDiagonals = [getVisibleEnemyPiece(board, kingsCoords, +1, 0), getVisibleEnemyPiece(board, kingsCoords, 0, -1), 
-							   getVisibleEnemyPiece(board, kingsCoords, -1, 0), getVisibleEnemyPiece(board, kingsCoords, 0, +1)];		
+	// Threats vertically / horizontally (rooks/queens)
+	var allVisibleDiagonals = [getVisibleEnemyToKing( +1, 0), getVisibleEnemyToKing( 0, -1), 
+							   getVisibleEnemyToKing( -1, 0), getVisibleEnemyToKing( 0, +1)];	
+                               
 	for( var visibleEnemy of allVisibleDiagonals){
 		if( !visibleEnemy ){ continue; } // Catch possible null value error here..
-		if( ['r','R','q','Q'].includes(visibleEnemy.piece) ){ return visibleEnemy.coords }
+		if( ['r','R','q','Q'].includes(visibleEnemy.piece) ){ return true; }
 	}
 	
 	// Threats from Pawns:
 	var directionOfThreateningPawn = (isWhiteTeam ? 1 : -1 );
 	
 	if(isWhiteTeam){
-		if( transCoords(kingsCoords, +1,  +1) && getPiece2(board, transCoords(kingsCoords, +1,  +1)) === 'P'){ return transCoords(kingsCoords, +1,  +1)} ;
-		if( transCoords(kingsCoords, -1,  +1) && getPiece2(board, transCoords(kingsCoords, -1,  +1)) === 'P'){ return transCoords(kingsCoords, -1,  +1)} ;
+		if( transCoords(kingsCoords, +1,  +1) && getPiece2(board, transCoords(kingsCoords, +1,  +1)) === 'P'){ return true; }
+		if( transCoords(kingsCoords, -1,  +1) && getPiece2(board, transCoords(kingsCoords, -1,  +1)) === 'P'){ return true; }
 	}else{
-		if( transCoords(kingsCoords, +1,  -1) && getPiece2(board, transCoords(kingsCoords, +1,  -1)) === 'p'){ return transCoords(kingsCoords, +1,  -1)} ;
-		if( transCoords(kingsCoords, -1,  -1) && getPiece2(board, transCoords(kingsCoords, -1,  -1)) === 'p'){ return transCoords(kingsCoords, -1,  -1)} ;
+		if( transCoords(kingsCoords, +1,  -1) && getPiece2(board, transCoords(kingsCoords, +1,  -1)) === 'p'){ return true; }
+		if( transCoords(kingsCoords, -1,  -1) && getPiece2(board, transCoords(kingsCoords, -1,  -1)) === 'p'){ return true; }
 	}
 
 	
@@ -109,10 +141,9 @@ function amIInCheck(board, isWhiteTeam)
 								transCoords(kingsCoords, -2,  +1), transCoords(kingsCoords, -2,  -1)];		
 	for( var possCoords of possibleKnightCoords){
 		if( !possCoords ){ continue; } // Catch possible null value error here..
-		
 		 
-		if(  isWhiteTeam   && (getPiece2(board, possCoords) === 'N') ){ return possCoords } 
-		if( (!isWhiteTeam) && (getPiece2(board, possCoords) === 'n') ){ return possCoords } 
+		if(  isWhiteTeam   && (getPiece2(board, possCoords) === 'N') ){ return true; } 
+		if( (!isWhiteTeam) && (getPiece2(board, possCoords) === 'n') ){ return true; } 
 
 	}
 	
@@ -124,7 +155,7 @@ function amIInCheck(board, isWhiteTeam)
 	{ 
 		if( !possCoords ){ continue; }
 		if( (getPiece2(board, possCoords) === 'K') || (getPiece2(board, possCoords) === 'k') ){
-			return possCoords;
+			return true;
 		}
 	}
 	
@@ -208,6 +239,61 @@ function getLegalMoves(coord, bstate){
 	
 	switch(piece)
 	{
+		case 'p':
+		case 'P':
+				// Represents the direction pawns move in. Use the fact black and white pawns do the same thing but in opposite directions.
+				var direction = (piece === "p") ? 1 : -1;
+	
+				var newCoords = transCoords(coord, 0, direction * 1);
+				
+				// Pawn can move forwards
+				if( newCoords && getPiece2(gamestate, newCoords) === "_" ){
+					
+					var totalstate = calculateBoardState(calculateBoardState(boardWithDefaultExtState, coord, '_'), newCoords, piece);
+	
+					// Pawn Promotions are encoded in a JS object with the coordinates of the pawn. 
+					if(newCoords.match('.8') || newCoords.match('.1')){ 
+						CandidateLegalMoves[newCoords] = totalstate + newCoords ;
+					}else{
+						CandidateLegalMoves[newCoords] = totalstate;
+					}
+					
+					
+					// Can move 2 spaces on first move. If so, it becomes enpassantable
+					if((piece === 'p' && coord.match('.2')) || (piece === 'P' && coord.match('.7')))
+					{
+						newCoords = transCoords(coord, 0, direction * 2);
+						if( getPiece2(gamestate, newCoords) === "_" )
+						{
+							var totalstate = calculateBoardState(calculateBoardState(boardWithDefaultExtState, coord, '_'), newCoords, piece);
+							totalstate = totalstate.substring(0, 78) + transCoords(coord, 0, direction * 1); 	// This means the piece is enpassantable 
+							CandidateLegalMoves[newCoords] = totalstate;
+						}	
+					}
+				}			
+				
+				// Pawn can take diagonally - and enpassant diagonally
+				var allCoords = [transCoords(coord, 1, direction * 1), transCoords(coord, -1, direction * 1) ];
+				for(var newCoords of allCoords)
+				{
+					if(newCoords == null) { continue; }	
+	
+					var enpassantablePawn = gamestate.substring(78); // The coords of any enpassanable pawn is the 77-79th chars of the gamestate
+					if( isEnemyPiece(getPiece2(gamestate, newCoords)) || (newCoords === enpassantablePawn) ) 
+					{
+						// In case pawn ends up on final rank, add the coords of the pawn which can be promoted to the state string.
+						var promotion = (newCoords.match('.8') || newCoords.match('.1')) ? '' : newCoords;
+						CandidateLegalMoves[newCoords] = calculateBoardState(calculateBoardState(boardWithDefaultExtState, coord, '_'), newCoords, piece) + promotion;
+						
+						// If this an en-passant, need to remove the enemy pawn. 
+						if( newCoords ===  enpassantablePawn){
+							var pawnToDeleteCoords =  transCoords(enpassantablePawn, 0, (-direction) * 1 );
+							CandidateLegalMoves[newCoords] = calculateBoardState(CandidateLegalMoves[newCoords], pawnToDeleteCoords , '_');
+						}
+					}
+				}
+				 
+			break;
 		case 'R':
 		case 'r':
 			
@@ -397,61 +483,6 @@ function getLegalMoves(coord, bstate){
 			findAllMovesInLine(-1,+1, extendedState);	
 			findAllMovesInLine(-1, 0, extendedState);	
 			findAllMovesInLine(-1,-1, extendedState);
-		break;
-		case 'p':
-		case 'P':
-			// Represents the direction pawns move in. Use the fact black and white pawns do the same thing but in opposite directions.
-			var direction = (piece === "p") ? 1 : -1;
-
-			var newCoords = transCoords(coord, 0, direction * 1);
-			
-			// Pawn can move forwards
-			if( newCoords && getPiece2(gamestate, newCoords) === "_" ){
-				
-				var totalstate = calculateBoardState(calculateBoardState(boardWithDefaultExtState, coord, '_'), newCoords, piece);
-
-				// Pawn Promotions are encoded in a JS object with the coordinates of the pawn. 
-				if(newCoords.match('.8') || newCoords.match('.1')){ 
-					CandidateLegalMoves[newCoords] = totalstate + newCoords ;
-				}else{
-					CandidateLegalMoves[newCoords] = totalstate;
-				}
-				
-				
-				// Can move 2 spaces on first move. If so, it becomes enpassantable
-				if((piece === 'p' && coord.match('.2')) || (piece === 'P' && coord.match('.7')))
-				{
-					newCoords = transCoords(coord, 0, direction * 2);
-					if( getPiece2(gamestate, newCoords) === "_" )
-					{
-						var totalstate = calculateBoardState(calculateBoardState(boardWithDefaultExtState, coord, '_'), newCoords, piece);
-						totalstate = totalstate.substring(0, 78) + transCoords(coord, 0, direction * 1); 	// This means the piece is enpassantable 
-						CandidateLegalMoves[newCoords] = totalstate;
-					}	
-				}
-			}			
-			
-			// Pawn can take diagonally - and enpassant diagonally
-			var allCoords = [transCoords(coord, 1, direction * 1), transCoords(coord, -1, direction * 1) ];
-			for(var newCoords of allCoords)
-			{
-				if(newCoords == null) { continue; }	
-
-				var enpassantablePawn = gamestate.substring(78); // The coords of any enpassanable pawn is the 77-79th chars of the gamestate
-				if( isEnemyPiece(getPiece2(gamestate, newCoords)) || (newCoords === enpassantablePawn) ) 
-				{
-					// In case pawn ends up on final rank, add the coords of the pawn which can be promoted to the state string.
-					var promotion = (newCoords.match('.8') || newCoords.match('.1')) ? '' : newCoords;
-					CandidateLegalMoves[newCoords] = calculateBoardState(calculateBoardState(boardWithDefaultExtState, coord, '_'), newCoords, piece) + promotion;
-					
-					// If this an en-passant, need to remove the enemy pawn. 
-					if( newCoords ===  enpassantablePawn){
-						var pawnToDeleteCoords =  transCoords(enpassantablePawn, 0, (-direction) * 1 );
-						CandidateLegalMoves[newCoords] = calculateBoardState(CandidateLegalMoves[newCoords], pawnToDeleteCoords , '_');
-					}
-				}
-			}
-			 
 		break;
 		case '_':
 			previouslySelectedSquare = null;
@@ -673,7 +704,7 @@ function existsLegalMoves(gamestate){
 	}
 	
 	for (let x = 0; x < 72 ; x++) {
-		if(referenceState[x] === '_' | referenceState[x] === ';'  ){continue;}
+		if(referenceState[x] === '_' || referenceState[x] === ';'  ){continue;}
 		if(referenceState[x] === gamestate[x]){
 			// indicates is allied piece.
 			// TODO: calculate coords.

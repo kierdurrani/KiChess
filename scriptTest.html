@@ -1,40 +1,45 @@
 <html>
 <script type="text/javascript">
 
-var gamestate = "________;________;________;________;________;________;________;________;" 
-var extendedState = {
-	"isWhitesTurn": true,
-	// represent allowed castling options:
-	"a1": true,
-	"h1": true,
-	"a8": true,
-	"h8": true,
-	"Enpassant": false
+var gamestate = "________;________;________;________;________;________;________;________;|11111__"; // Section after '|' Encodes turn, castling rights (a1,h1,a8,h8) and enpassanable pawn
+String.prototype.isWhitesTurn = function hash() {
+	return (this[73] === '1');
+};
+  
+
+function isEnemyPiece(piece){
+	if(piece === "_") {return false;}
+		
+		var isWhitePiece  = (piece == piece.toLowerCase());
+		return !(isWhitePiece === gamestate.isWhitesTurn());
 }
 
-var totalstate = gamestate + '|' + JSON.stringify(extendedState);
+function isEnemyPiece2(piece){
+	if(piece === "_") {return false;}
+		
+		var isWhitePiece  = (piece == piece.toLowerCase());
+		return (isWhitePiece !== gamestate.isWhitesTurn());
+}
 
-
-var t1 = performance.now();
+var t1 =  performance.now();
 var i = 0;
-while(i<100000)
+while(i<10000000)
 {
-	JSON.parse(JSON.stringify(extendedState));
-	i++;
+isEnemyPiece('P');
+i++;
 }
 console.log( performance.now() - t1 );
 
 
 var t2 = performance.now();
 var j = 0;
-while(j<100000)
+while(j<10000000)
 {
-	var posGamestate  = totalstate.split('|')[0];
-	var posExtendedState = JSON.parse(totalstate.split('|')[1]);
+	isEnemyPiece2('P');
 	j++;
 }
 console.log( performance.now() - t2);
-console.log(gamestate.substring(0,73));
+
 
 </script>
 </html>
