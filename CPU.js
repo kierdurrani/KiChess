@@ -1,11 +1,9 @@
 var maxDepth = 4;
-function calculateBestMove(gamestate, extendedState){
+function calculateBestMove(gamestate){
 
 	// Salvage subtree of states down the path we are going.
-	// AllAnalysedStates = {};
 	console.log("# States from end of last go: " + Object.keys(AllAnalysedStatesClone).length);
-	var totalCurrentState = gamestate + "|" + JSON.stringify(extendedState);
-	var currentStateAnal = getAnalysedStates(totalCurrentState);
+	var currentStateAnal = getAnalysedStates(gamestate);
 	if(currentStateAnal){
 		cloneAnalysedSubTree(currentStateAnal, maxDepth);
 	}
@@ -14,16 +12,16 @@ function calculateBestMove(gamestate, extendedState){
 	AllAnalysedStatesClone = {};
 	console.log("# States salvaged: " + Object.keys(AllAnalysedStates).length);
 	
-	var bestMoveAndScore = bestMoveToDepth((gamestate + "|" + JSON.stringify(extendedState)), maxDepth);
+	var bestMoveAndScore = bestMoveToDepth(gamestate, maxDepth);
 	
 	console.log("# States analysed: " + Object.keys(AllAnalysedStates).length);
-	console.log("Score Estimate" + bestMoveAndScore.bestScore);
+	console.log("Score Estimate: " + bestMoveAndScore.bestScore);
 	
-	var stringRep = bestMoveAndScore.bestState;
-
-	// renderBoard(gamestate);
-	return {gamestate:  stringRep.split('|')[0], extendedState: JSON.parse(stringRep.split('|')[1])};
+	return bestMoveAndScore.bestState;
 }
+String.prototype.isWhitesTurn = function hash() {
+	 return (this[73] === '1');
+};
 
 // Hashtable of lists of analysed States
 var AllAnalysedStates = {};
@@ -32,6 +30,7 @@ var AllAnalysedStatesClone = {};
 // best move is the one with the best score.
 // the score(state, depth) is defined as the best move of the children to depth - 1
 // returns {bestState: bestState, bestScore: bestScore}
+var global;
 function bestMoveToDepth(startingState, depth){
 
 	// See if state has already been analsed. If not, create the state in AllAnalysedStates
@@ -43,13 +42,13 @@ function bestMoveToDepth(startingState, depth){
 		return {bestState: analysedStartingState.BestChildState, bestScore: analysedStartingState.DeepScore};
 	}
 	
+	global = analysedStartingState;
 	// If ChildStates have already been calculated, use that, otherwise calculate it.
-	if(! analysedStartingState.ChildStates) { analysedStartingState.ChildStates = getAllChildStatesWrapper(startingState); }
+	if(! analysedStartingState.ChildStates) { analysedStartingState.ChildStates = getAllChildStates(startingState); }
 	
 	var bestState;
 	var bestScore;
 	for(var possState of analysedStartingState.ChildStates){
-		
 		var analysedPossState = createOrGetAnalysedState(possState);
 		
 		if(analysedPossState.Depth < depth){
@@ -60,7 +59,7 @@ function bestMoveToDepth(startingState, depth){
 		}
 		
 		// Now we can be sure that we have already analysed this state to sufficient depth. Now we simply min_max
-		if(analysedPossState.StateString[89] === 't' ){ // this is a quick and dirty equivalent to - if(extendedState.isWhitesTurn)
+		if(analysedPossState.StateString.isWhitesTurn()){ // this is a quick and dirty equivalent to - if(extendedState.isWhitesTurn)
 			// white wants to find highest score;
 			if( (analysedPossState.DeepScore < bestScore) || (bestScore == null) ){
 				bestScore = analysedPossState.DeepScore;
@@ -88,16 +87,14 @@ function getAnalysedStates(stateString){
 	// AnalysedState does not exist in the list of AllAnalysedStates:
 	return null; 
 }
+
 function createOrGetAnalysedState(stateString){
 //	console.log(stateString);
 	var hashCode = stateString;
-	if(AllAnalysedStates[hashCode]){
-		
-		return AllAnalysedStates[hashCode];
-
-		
+	if(AllAnalysedStates[hashCode]){		
+		return AllAnalysedStates[hashCode];		
 	}
-	var baseScore = calculateMaterialScoreWrapper(stateString);
+	var baseScore = calculateMaterialScore(stateString);
 	
 	var AnalysedState = {
 		DeepScore: baseScore,
@@ -113,7 +110,7 @@ function createOrGetAnalysedState(stateString){
 			// stalemate special code.
 			AnalysedState.DeepScore = 0;
 		}
-		AnalysedState.ChildStates = [stateString]; // This is just to prevent 
+		AnalysedState.ChildStates = [stateString]; // Cant remember why this works. Probably prevents trying to find non existent child states.
 	}
 	AllAnalysedStates[hashCode] = AnalysedState;
 	
@@ -139,62 +136,50 @@ function cloneAnalysedSubTree(rootState, depthLimit){
 	AllAnalysedStatesClone[hashCode] = rootState;
 }
 
-// Returns all states as a list in format: gamestate + "|" + JSON.stringify(extendedState);
-// getAllChildStates(stringRep.split('|')[0], JSON.parse(stringRep.split('|')[1])) 
-function getAllChildStatesWrapper(totalstate){
-	
-	return getAllChildStates(totalstate.split('|')[0], JSON.parse(totalstate.split('|')[1]));
-}
-function getAllChildStates(gamestate, extendedState){
+// Returns all states as a list in format:
+function getAllChildStates(totalstate){
 	
 	var allPossibleMoves = [];
 	
 	var referenceState;
-	if(extendedState.isWhitesTurn){
-		referenceState = gamestate.toLowerCase();
+	if(totalstate.isWhitesTurn()){
+		referenceState = totalstate.toLowerCase();
 	}else{
-		referenceState = gamestate.toUpperCase();
+		referenceState = totalstate.toUpperCase();
 	}
 	
 	for (let x = 0; x < 72 ; x++) {
 		if(referenceState[x] === '_' | referenceState[x] === ';'  ){continue;}
-		if(referenceState[x] === gamestate[x]){
+		if(referenceState[x] === totalstate[x]){
 			// indicates is allied piece.
 			var letterCoord =  (x % 9) + 1 ;
 			var numberCoord =  (8 -  Math.floor(x / 9));
 			var currentPieceCoords = String.fromCharCode(letterCoord + 96) + numberCoord;
 			
-			let legalMoves = getLegalMoves(currentPieceCoords, gamestate, extendedState);
+			let legalMoves = getLegalMoves(currentPieceCoords, totalstate);
 			
 			for (const move of Object.keys(legalMoves)) {
-				
-				allPossibleMoves = allPossibleMoves.concat( legalMoves[move].gamestate + "|" + JSON.stringify(legalMoves[move].extendedState));
-				// TODO, case of promotion!
+				// concatenates the legal moves for this coordinate 
+				allPossibleMoves = allPossibleMoves.concat( legalMoves[move] );
+				// TODO, handle case of promotion!
 			}
 		}
 	}
 	return allPossibleMoves;
 }
 
-// performance metrics
-
-function calculateMaterialScoreWrapper(totalstate){
-	var posGamestate  = totalstate.split('|')[0];
-	var posExtendedState = JSON.parse(totalstate.split('|')[1]);
-
-	return calculateMaterialScore(posGamestate, posExtendedState);
-}
-
-function calculateMaterialScore(gamestate, extendedState){
+function calculateMaterialScore(gamestate){
+	
 	let score = 0;
 	// TODO, make faster so that extendedState is not necessary.
-	
+	// console.log(gamestate);
 	// Determine whether in checkmate or in stalemate!
-	if(!existsLegalMoves(gamestate, extendedState)){
-		if(amIInCheck(gamestate, extendedState.isWhitesTurn)){
+	var whitesTurn = gamestate.isWhitesTurn();
+	if(!existsLegalMoves(gamestate, whitesTurn)){
+		if(amIInCheck(gamestate, whitesTurn)){
 		
 			// checkmate
-			if(extendedState.isWhitesTurn){ 
+			if(whitesTurn){ 
 				return -10000;
 			}else{ 							
 				return +10000; 
