@@ -331,8 +331,6 @@ function getLegalMoves(coord, bstate){
 					}
 					CandidateLegalMoves[possCoords] = calculateBoardState(calculateBoardState(gamestate, coord, '_'), possCoords, piece).substring(0, 72) + '|' +  newExtendedState;
 			
-				//	console.log(CandidateLegalMoves[possCoords]);
-			//		console.log(possCoords);
 				}
 			}
 			
@@ -393,10 +391,10 @@ function getLegalMoves(coord, bstate){
 						if( ! amIInCheck(gamestate, isItWhitesTurn) ){
 						
 							var intState1 = calculateBoardState(calculateBoardState(gamestate, 'e8', '_'), 'd8', 'K');
-							if( !amIInCheck(intState1, intState1.isWhitesTurn()) ){
+							if( !amIInCheck(intState1, isItWhitesTurn) ){
 								
 								var intState2 = calculateBoardState(calculateBoardState(intState1, 'd8', '_'), 'c8', 'K');
-								if( !amIInCheck(intState2, intState2.isWhitesTurn()) ){
+								if( !amIInCheck(intState2, isItWhitesTurn) ){
 									
 									var intState3 = calculateBoardState(calculateBoardState(intState2, 'c8', '_'), 'b8', 'K'); // no need to check this state 
 									var finalState = calculateBoardState(calculateBoardState(intState3, 'a8', '_'), 'c8', 'R'); // This gets checked later
