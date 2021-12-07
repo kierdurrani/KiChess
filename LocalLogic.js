@@ -340,7 +340,7 @@ function getLegalMoves(coord, bstate){
 			if( piece === 'k'){
 
 				// White long/a1 side castle.  king starts at E1, and moves to B1
-				if(gamestate[74] === 1){
+				if(gamestate[74] == 1){
 					if( (getPiece2(gamestate, 'b1')==='_') && (getPiece2(gamestate, 'c1')==='_') && (getPiece2(gamestate, 'd1')==='_') ){ 
 						// king starts at E1, and moves to B1. Rook starts at A1 and finishes at B1
 						// Verify not initially in check, and all intermediate squares are not threatened.
@@ -367,7 +367,7 @@ function getLegalMoves(coord, bstate){
 				}
 				
 				// White short (right) / h1 side castle. 
-				if(gamestate[75] === 1){
+				if(gamestate[75] == 1){
 					if( (getPiece2(gamestate, 'f1')==='_') && (getPiece2(gamestate, 'g1')==='_')  ){ 
 						// king starts at e1, and moves to g1. Rook starts at h1 and finishes at f1
 						// Verify not initially in check, and all intermediate squares are not threatened.
@@ -390,7 +390,7 @@ function getLegalMoves(coord, bstate){
 				}
 			}else{
 				// black long/left/a8 side castle.  king starts at e8, and moves to b8
-				if(gamestate[76] === 1){
+				if(gamestate[76] == 1){
 					if( (getPiece2(gamestate, 'b8')==='_') && (getPiece2(gamestate, 'c8')==='_') && (getPiece2(gamestate, 'd8')==='_') ){ 
 						// king starts at E1, and moves to B1. Rook starts at A1 and finishes at B1
 						// Verify not initially in check, and all intermediate squares are not threatened.
@@ -416,7 +416,7 @@ function getLegalMoves(coord, bstate){
 					}
 				}
 				// black short (right) / a8 side castle. 
-				if(gamestate[77] === 1){
+				if(gamestate[77] == 1){
 					if( (getPiece2(gamestate, 'f8')==='_') && (getPiece2(gamestate, 'g8')==='_')  ){ 
 						// king starts at e8, and moves to g8. Rook starts at h8 and finishes at f8
 						// Verify not initially in check, and all intermediate squares are not threatened.
