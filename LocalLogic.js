@@ -172,6 +172,7 @@ function getLegalMoves(coord, bstate){
 	const defaultExtendedState = (isItWhitesTurn ? '0' : '1') + gamestate.substring(74, 78) + '__';
 	var boardWithDefaultExtState = gamestate.substring(0, 72) + '|' + defaultExtendedState; 
 	
+	// TODO, performance improvements:
 	function findAllMovesInLine(x, y, extendedState){
 		
 		var iter = 1;
@@ -183,7 +184,6 @@ function getLegalMoves(coord, bstate){
 			if(  pieceOnSquare == '_'){
 				
 				// Modify the board state to the new state and appednd the 
-				var newBoardState = 
 				CandidateLegalMoves[newCoords] =  calculateBoardState(calculateBoardState(boardWithDefaultExtState, coord, '_'), newCoords, piece);
 				
 			}else{ 
