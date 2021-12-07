@@ -141,7 +141,6 @@ function amIInCheck(board, isWhiteTeam)
 
 function getLegalMoves(coord, bstate){
 
-	
 	if(bstate == null){
 		// use global values if not passed in
 		console.log("get existing");
@@ -170,18 +169,8 @@ function getLegalMoves(coord, bstate){
 		return !(isWhitePiece === isItWhitesTurn);
 	}
 	
-	var boardWithDefaultExtState = gamestate.substring(0, 72) + '|' + getDefaultExtendedState(); 
-	var defaultExtendedState = null;
-	function getDefaultExtendedState(){
-
-		if(defaultExtendedState){
-			return defaultExtendedState.substring(0); // This clones the string.
-		}
-		
-		// This changes whose turn it is but keeps the rest of the gamestate the same.
-		defaultExtendedState = (isItWhitesTurn ? '0' : '1') + gamestate.substring(74); 
-		return defaultExtendedState.substring(0, 78) + '__'; // This clones the string and removes previously enpassantable pawn
-	}
+	const defaultExtendedState = (isItWhitesTurn ? '0' : '1') + gamestate.substring(74, 78) + '__';
+	var boardWithDefaultExtState = gamestate.substring(0, 72) + '|' + defaultExtendedState; 
 	
 	function findAllMovesInLine(x, y, extendedState){
 		
@@ -276,7 +265,7 @@ function getLegalMoves(coord, bstate){
 		case 'R':
 		case 'r':
 			
-			var rookExState = getDefaultExtendedState();
+			var rookExState = defaultExtendedState;
 			// DISABLE CASTLING WHEN ROOK MOVES
 			switch(coord)
 			{
@@ -312,7 +301,7 @@ function getLegalMoves(coord, bstate){
 		break;
 		case 'b':
 		case 'B':
-			var extendedState =  getDefaultExtendedState();
+			var extendedState =  defaultExtendedState;
 			findAllMovesInLine(+1, +1, extendedState);
 			findAllMovesInLine(+1, -1, extendedState);
 			findAllMovesInLine(-1, +1, extendedState);	
@@ -332,7 +321,7 @@ function getLegalMoves(coord, bstate){
 				if( (pieceOnTargetSquare == '_') || isEnemyPiece(pieceOnTargetSquare) ){
 					
 					// Moving the king prevents castling
-					var newExtendedState = getDefaultExtendedState();	
+					var newExtendedState = defaultExtendedState;	
 					if( piece == 'k' ){  
 						newExtendedState = newExtendedState.substring(0, 1) + '0' + newExtendedState.substring(2); 
 						newExtendedState = newExtendedState.substring(0, 2) + '0' + newExtendedState.substring(3); 
@@ -367,7 +356,7 @@ function getLegalMoves(coord, bstate){
 									var intState3 = calculateBoardState(calculateBoardState(intState2, 'c1', '_'), 'b1', 'k'); // no need to check this state 
 									var finalState = calculateBoardState(calculateBoardState(intState3, 'a1', '_'), 'c1', 'r'); // This gets checked later
 													
-									var ExStateWhiteCantCastle = getDefaultExtendedState();	
+									var ExStateWhiteCantCastle = defaultExtendedState;	
 									ExStateWhiteCantCastle = ExStateWhiteCantCastle.substring(0, 1) + '0' + ExStateWhiteCantCastle.substring(2); 
 									ExStateWhiteCantCastle = ExStateWhiteCantCastle.substring(0, 2) + '0' + ExStateWhiteCantCastle.substring(3);
 									
@@ -391,7 +380,7 @@ function getLegalMoves(coord, bstate){
 								var intState2 = calculateBoardState(calculateBoardState(intState1, 'f1', '_'), 'g1', 'k'); // no need to check this state 
 								var finalState = calculateBoardState(calculateBoardState(intState2, 'h1', '_'), 'f1', 'r'); // This gets checked later
 								
-								var ExStateWhiteCantCastle = getDefaultExtendedState();	
+								var ExStateWhiteCantCastle = defaultExtendedState;	
 								ExStateWhiteCantCastle = ExStateWhiteCantCastle.substring(0, 1) + '0' + ExStateWhiteCantCastle.substring(2); 
 								ExStateWhiteCantCastle = ExStateWhiteCantCastle.substring(0, 2) + '0' + ExStateWhiteCantCastle.substring(3);
 								
@@ -417,7 +406,7 @@ function getLegalMoves(coord, bstate){
 									var intState3 = calculateBoardState(calculateBoardState(intState2, 'c8', '_'), 'b8', 'K'); // no need to check this state 
 									var finalState = calculateBoardState(calculateBoardState(intState3, 'a8', '_'), 'c8', 'R'); // This gets checked later
 									
-									var ExStateBlackCantCastle = getDefaultExtendedState();	
+									var ExStateBlackCantCastle = defaultExtendedState;	
 									ExStateBlackCantCastle = ExStateBlackCantCastle.substring(0, 1) + '0' + ExStateBlackCantCastle.substring(2); 
 									ExStateBlackCantCastle = ExStateBlackCantCastle.substring(0, 2) + '0' + ExStateBlackCantCastle.substring(3);
 									
@@ -440,7 +429,7 @@ function getLegalMoves(coord, bstate){
 								var intState2 = calculateBoardState(calculateBoardState(intState1, 'f8', '_'), 'g8', 'K'); // no need to check this state 
 								var finalState = calculateBoardState(calculateBoardState(intState2, 'h8', '_'), 'f8', 'R'); // This gets checked later
 								
-								var ExStateBlackCantCastle = getDefaultExtendedState();	
+								var ExStateBlackCantCastle = defaultExtendedState;	
 								ExStateBlackCantCastle = ExStateBlackCantCastle.substring(0, 1) + '0' + ExStateBlackCantCastle.substring(2); 
 								ExStateBlackCantCastle = ExStateBlackCantCastle.substring(0, 2) + '0' + ExStateBlackCantCastle.substring(3);
 
@@ -453,7 +442,7 @@ function getLegalMoves(coord, bstate){
 		break;
 		case 'q':
 		case 'Q':
-			var extendedState =  getDefaultExtendedState();
+			var extendedState =  defaultExtendedState;
 			findAllMovesInLine(+1,+1, extendedState);
 			findAllMovesInLine(+1, 0, extendedState);	
 			findAllMovesInLine(+1,-1, extendedState);
@@ -787,5 +776,3 @@ function promotePawn(newPiece){
 	previouslySelectedSquare = null;
 	promotionContext = false;
 }
-
-
