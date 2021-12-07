@@ -50,7 +50,7 @@ function amIInCheck(board, isWhiteTeam)
 		var newX = kingX + dx;
 		if ( newX < 1 ||  newX > 8 ){ return null;}
     
-        return board[9 * (8 - newY) + newX]; 
+        return board[9 * (8 - newY) + (newX - 1)]; 
         
     }
 
@@ -63,9 +63,8 @@ function amIInCheck(board, isWhiteTeam)
         var newY = kingY + y;
 		
         while( newX <= 8 && newY <= 8 && newX >= 1 && newY >= 1 ){
-
             // Rows are enumerated 'backwards' and are 9 chars long due to colon seperator.
-			var visiblePiece = board[9 * (8 - newY) + newX]; 
+			var visiblePiece = board[9 * (8 - newY) + (newX - 1)]; 
 
 			if(visiblePiece !== '_'){
 					
@@ -93,24 +92,24 @@ function amIInCheck(board, isWhiteTeam)
 	
     for( var visibleEnemy of allVisibleDiagonals){
 		if( !visibleEnemy ){ continue; } // Catch possible null value error here..
-		if( ['b','B','q','Q'].includes(visibleEnemy.piece) ){ return true; }
+		if( ['b','B','q','Q'].includes(visibleEnemy) ){ return true; }
 	}
 	
 	// Threats vertically / horizontally (rooks/queens)
-	var allVisibleDiagonals = [getVisibleEnemyToKing( +1, 0), getVisibleEnemyToKing( 0, -1), 
+	var allVisibleVerticals = [getVisibleEnemyToKing( +1, 0), getVisibleEnemyToKing( 0, -1), 
 							   getVisibleEnemyToKing( -1, 0), getVisibleEnemyToKing( 0, +1)];	
                                
-	for( var visibleEnemy of allVisibleDiagonals){
+	for( var visibleEnemy of allVisibleVerticals){
 		if( !visibleEnemy ){ continue; } // Catch possible null value error here..
-		if( ['r','R','q','Q'].includes(visibleEnemy.piece) ){ return true; }
+		if( ['r','R','q','Q'].includes(visibleEnemy) ){ return true; }
 	}
 	
 	// Threats from Pawns:
 	if(isWhiteTeam){
 		if( getPieceRelativeToKing( +1, +1) === 'P'){ return true; }
-		if( getPieceRelativeToKing( -1, +1) === 'P'){ return true; }
+		if( getPieceRelativeToKing( +1, -1) === 'P'){ return true; }
 	}else{
-		if( getPieceRelativeToKing( +1, -1) === 'p'){ return true; }
+		if( getPieceRelativeToKing( -1, +1) === 'p'){ return true; }
 		if( getPieceRelativeToKing( -1, -1) === 'p'){ return true; }
 	}
 
@@ -641,7 +640,7 @@ function renderBoard(state, highlightedSquares){
 	var isInCheck = amIInCheck(state, state.isWhitesTurn());
 	if(isInCheck){
 		// Get Location of the King:
-		var kingIndex = ( ! state.isWhitesTurn() ) ? gamestate.indexOf('k') : gamestate.indexOf('K'); 
+		var kingIndex =   state.isWhitesTurn()  ? state.indexOf('k') : state.indexOf('K'); 
 		var letterCoord =  (kingIndex % 9) + 1 ;
 		var numberCoord =  (8 -  Math.floor(kingIndex / 9));
 		var kingsCoords = String.fromCharCode(letterCoord + 96) + numberCoord;
