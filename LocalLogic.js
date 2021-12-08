@@ -200,7 +200,52 @@ function getLegalMoves(coord, bstate){
 			newCoords = transCoords(coord, x * iter, y * iter);
 		}
 	}
+	////////////// ATTEMPTED PERFOMANCE IMPROVEMENTS
+	var startX = coord.charCodeAt(0) - 96;
+	var startY =  Number(coord[1]);
+	// var piece is defined outside
+	function findAllMovesInLineNEW(dx, dy, extendedState){
+		
+		var iter = 1;
+		var newX = startX + dx;
+		var newY = startY + dy;
+		
+		// Removes the piece from its starting square - (since this )
+		const DefaultNextState = calculateBoardState(gamestate.substring(0, 72) + '|' + extendedState, coord, '_'); 
 
+		while( newX <= 8 && newY <= 8 && newX >= 1 && newY >= 1 )
+		{
+			// Rows are enumerated 'backwards' and are 9 chars long due to colon seperator.
+			// Cols are determined by the leading letter. This formula converts a char into its corresponding integer from 0-7
+
+			var index = 9 * (8 - newY) + newX - 1;
+
+			var pieceOnSquare = gamestate[index];
+
+			if(  pieceOnSquare == '_'){
+				// Represents the piece moving to an empty square
+
+				var ToCoords = String.fromCharCode((index % 9) + 97) + (8 -  Math.floor( index / 9));
+				CandidateLegalMoves[ToCoords] = DefaultNextState.substring(0, index) + piece + DefaultNextState.substring(index + 1);
+			}else{ 
+				if(isEnemyPiece(pieceOnSquare)){
+
+					// Represents the piece taking the enemy piece
+					var ToCoords = String.fromCharCode((index % 9) + 97) + (7 -  Math.floor( index / 9));
+					CandidateLegalMoves[ToCoords] = DefaultNextState.substring(0, index) + piece + DefaultNextState.substring(index + 1);
+					break; 
+				}else{
+					// Cannot capture allied piece, or jump over it.
+					break; 
+				}
+			}
+			iter++;
+			var newX = startX + iter * dx;
+			var newY = startY + iter * dy;
+		}
+	}
+
+	//////// END 
 
 	/////////////////////////////	MAIN LOGIC	///////////////////////////////////
 	
@@ -454,11 +499,11 @@ function getLegalMoves(coord, bstate){
 			delete CandidateLegalMoves[move];
 		}
 	}
-	
+	global = CandidateLegalMoves;
 	return CandidateLegalMoves;
 		
 }
-
+var global;
 function markLegalMoves(coord){
 
 	// Mark the newly selected square.
