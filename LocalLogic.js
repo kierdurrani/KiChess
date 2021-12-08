@@ -201,8 +201,8 @@ function getLegalMoves(coord, bstate){
 		}
 	}
 	////////////// ATTEMPTED PERFOMANCE IMPROVEMENTS
-	var startX = coord.charCodeAt(0) - 96;
-	var startY =  Number(coord[1]);
+	//var startX = coord.charCodeAt(0) - 96;
+	//var startY =  Number(coord[1]);
 	// var piece is defined outside
 	function findAllMovesInLineNEW(dx, dy, extendedState){
 		
@@ -244,6 +244,7 @@ function getLegalMoves(coord, bstate){
 			var newY = startY + iter * dy;
 		}
 	}
+
 
 	//////// END 
 
@@ -330,17 +331,35 @@ function getLegalMoves(coord, bstate){
 		break;
 		case 'N':
 		case 'n':
-			var allCoords = [transCoords(coord, 1, 2), transCoords(coord, 1, -2), transCoords(coord, -1, 2), transCoords(coord, -1, -2),	
-							 transCoords(coord, 2, 1), transCoords(coord, 2, -1), transCoords(coord, -2, 1), transCoords(coord, -2, -1) ];
 
-			for(var possCoords of allCoords){
-				if( !possCoords ){ continue; } // Catch possible null value error here..
+			let boardMissingKnight = calculateBoardState(boardWithDefaultExtState, coord, '_');
+		
+			var startY = coord.charCodeAt(0) - 96; 
+			var startX = Number(coord[1]);
 
-				var pieceOnTargetSq = getPiece2(gamestate, possCoords);
-				if( (pieceOnTargetSq === '_') || isEnemyPiece(pieceOnTargetSq) ){
-					let newGameState = calculateBoardState(calculateBoardState(boardWithDefaultExtState, coord, '_'), possCoords, piece);
-					CandidateLegalMoves[possCoords] = newGameState;
-				}			
+			const coordChangeArray = [2, 1, -1, -2];
+	
+			for (const dy of coordChangeArray) {
+			   
+				var newY = startY + dy;
+				if ( newY < 1 ||  newY > 8 ){ continue; }
+				
+				let iterDX = (dy == 1 || dy == -1) ? [2,-2] : [1,-1];
+				for (const dx of iterDX) {
+			   
+					var newX = startX + dx;
+					if ( newX < 1 ||  newX > 8 ){ continue; }
+					
+					// We have confirmed that the knight  is moving to somewhere still on the board. Resolve move state..
+					var knightToCoord = String.fromCharCode(newY + 96) + newX;
+					
+					var pieceOnTargetSq = getPiece2(gamestate, knightToCoord);
+	
+					if( (pieceOnTargetSq === "_") || isEnemyPiece(pieceOnTargetSq) ){ 
+						let newGameState = calculateBoardState(boardMissingKnight, knightToCoord, piece);
+						CandidateLegalMoves[knightToCoord] = newGameState;
+					}
+				}
 			}
 		break;
 		case 'b':
