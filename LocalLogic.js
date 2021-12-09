@@ -138,8 +138,6 @@ function amIInCheck(board, isWhiteTeam)
 }
 
 
-var time = 0;
-var tb = 0;
 function getLegalMoves(coord, gamestate){
 
 	var isItWhitesTurn = gamestate.isWhitesTurn(); // cache this for speed
@@ -327,10 +325,10 @@ function getLegalMoves(coord, gamestate){
 			{
 				// This indicates rook has moved from starting square (or has moved from another rook's staring square, which doesnt matter).
 				// Here we disable the castling part of the extended state.
-				case 'a1':  rookExState = rookExState.substring(1, 1) + 0 + rookExState.substring(2); break;
-				case 'h1':  rookExState = rookExState.substring(2, 1) + 0 + rookExState.substring(3); break;
-				case 'a8':  rookExState = rookExState.substring(3, 1) + 0 + rookExState.substring(4); break;
-				case 'h8':  rookExState = rookExState.substring(4, 1) + 0 + rookExState.substring(5); break;
+				case 'a1':  rookExState = rookExState.substring(0, 1) + 0 + rookExState.substring(2); break;
+				case 'h1':  rookExState = rookExState.substring(0, 2) + 0 + rookExState.substring(3); break;
+				case 'a8':  rookExState = rookExState.substring(0, 3) + 0 + rookExState.substring(4); break;
+				case 'h8':  rookExState = rookExState.substring(0, 4) + 0 + rookExState.substring(5); break;
 
 			}
 
@@ -342,7 +340,7 @@ function getLegalMoves(coord, gamestate){
 		break;
 		case 'N':
 		case 'n':
-			//var t = performance.now();
+
 			let boardMissingKnight = calculateBoardState(boardWithDefaultExtState, coord, '_');
 		
 			var startY = coord.charCodeAt(0) - 96; 
@@ -372,16 +370,16 @@ function getLegalMoves(coord, gamestate){
 					}
 				}
 			}
-			//time  +=  performance.now() - t;
+
 		break;
 		case 'b':
 		case 'B':
-			//var t = performance.now();
+
 			findAllMovesInLine(+1, +1, defaultExtendedState);
 			findAllMovesInLine(+1, -1, defaultExtendedState);
 			findAllMovesInLine(-1, +1, defaultExtendedState);	
 			findAllMovesInLine(-1, -1, defaultExtendedState);
-			//tb  +=  performance.now() - t;
+
 		break;
 		case 'k':
 		case 'K':
@@ -804,11 +802,12 @@ function EndTurn(){
 			EndTurn();
 	}} , 20)
 
-
-	return
+	return;
 	
 	// END TODO 
 }
+
+
 function checkmate(){
 	var loosingTeamIsWhite = gamestate.isWhitesTurn();
 	if(loosingTeamIsWhite){
