@@ -195,9 +195,9 @@ function calculateMaterialScore(gamestate){
 			case '_':
 			case ';':
 				continue;
-			case 'p':	score = score + 1;
+			case 'p':	score = score + (0.8 + (Math.floor((71-x)/9))/10  + 0.0 * [39,40,30,31].includes(x) ); // this encourages pawns to push and take centre
 			break;
-			case 'P':	score = score - 1;
+			case 'P':	score = score - (0.8 + (Math.floor(x/9))/10  + 0.0 * [39,40,30,31].includes(x) );
 			break;
 			case 'r':	score = score + 5;
 			break;
@@ -207,9 +207,9 @@ function calculateMaterialScore(gamestate){
 			break;
 			case 'Q':	score = score - 9;
 			break;
-			case 'b':	score = score + 3;
+			case 'b':	score = score + 3.1;
 			break;
-			case 'B':	score = score - 3;
+			case 'B':	score = score - 3.1;
 			break;
 			case 'n':	score = score + 3;
 			break;
