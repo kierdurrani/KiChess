@@ -138,16 +138,10 @@ function amIInCheck(board, isWhiteTeam)
 }
 
 
-function getLegalMoves(coord, bstate){
+var time = 0;
+var tb = 0;
+function getLegalMoves(coord, gamestate){
 
-	if(bstate == null){
-		// use global values if not passed in
-		console.log("get existing");
-		var gamestate = getGameState();		
-	}else{
-		var gamestate = bstate;
-	}
-	
 	var isItWhitesTurn = gamestate.isWhitesTurn(); // cache this for speed
 
 	var piece = getPiece2(gamestate, coord);
@@ -172,7 +166,7 @@ function getLegalMoves(coord, bstate){
 	var boardWithDefaultExtState = gamestate.substring(0, 72) + '|' + defaultExtendedState; 
 	
 	// TODO, performance improvements:
-	function findAllMovesInLine(x, y, extendedState){
+	function findAllMovesInLineOLD(x, y, extendedState){
 		
 		var iter = 1;
 		var newCoords = transCoords(coord, x * iter, y * iter);
@@ -201,10 +195,10 @@ function getLegalMoves(coord, bstate){
 		}
 	}
 	////////////// ATTEMPTED PERFOMANCE IMPROVEMENTS
-	//var startX = coord.charCodeAt(0) - 96;
-	//var startY =  Number(coord[1]);
+	var startX = coord.charCodeAt(0) - 96;
+	var startY =  Number(coord[1]);
 	// var piece is defined outside
-	function findAllMovesInLineNEW(dx, dy, extendedState){
+	function findAllMovesInLine(dx, dy, extendedState){
 		
 		var iter = 1;
 		var newX = startX + dx;
@@ -223,15 +217,15 @@ function getLegalMoves(coord, bstate){
 			var pieceOnSquare = gamestate[index];
 
 			if(  pieceOnSquare == '_'){
-				// Represents the piece moving to an empty square
+				// The piece is moving to an empty square
 
-				var ToCoords = String.fromCharCode((index % 9) + 97) + (8 -  Math.floor( index / 9));
+				var ToCoords = String.fromCharCode(newX + 96) + newY;
 				CandidateLegalMoves[ToCoords] = DefaultNextState.substring(0, index) + piece + DefaultNextState.substring(index + 1);
 			}else{ 
 				if(isEnemyPiece(pieceOnSquare)){
 
 					// Represents the piece taking the enemy piece
-					var ToCoords = String.fromCharCode((index % 9) + 97) + (7 -  Math.floor( index / 9));
+					var ToCoords = String.fromCharCode(newX + 96) + newY;
 					CandidateLegalMoves[ToCoords] = DefaultNextState.substring(0, index) + piece + DefaultNextState.substring(index + 1);
 					break; 
 				}else{
@@ -264,9 +258,13 @@ function getLegalMoves(coord, bstate){
 					
 					var totalstate = calculateBoardState(calculateBoardState(boardWithDefaultExtState, coord, '_'), newCoords, piece);
 	
-					// Pawn Promotions are encoded in a JS object with the coordinates of the pawn. 
+					
 					if(newCoords.match('.8') || newCoords.match('.1')){ 
-						CandidateLegalMoves[newCoords] = totalstate + newCoords ;
+
+						// Pawn Promotions are encoded by adding the coords the pawn ended up on. 
+						// promotionContext = newCoords;
+						var placeHolderQueen = isItWhitesTurn ? 'q' : 'Q';
+						CandidateLegalMoves[newCoords] = calculateBoardState(totalstate, newCoords, placeHolderQueen);
 					}else{
 						CandidateLegalMoves[newCoords] = totalstate;
 					}
@@ -302,7 +300,20 @@ function getLegalMoves(coord, bstate){
 						if( newCoords ===  enpassantablePawn){
 							var pawnToDeleteCoords =  transCoords(enpassantablePawn, 0, (-direction) * 1 );
 							CandidateLegalMoves[newCoords] = calculateBoardState(CandidateLegalMoves[newCoords], pawnToDeleteCoords , '_');
+						}else{
+
+							// Pawn Promotions are encoded adding a placeholder queen and setting the promotionContext variable
+							if(newCoords.match('.8') || newCoords.match('.1')){ 
+								// promotionContext = newCoords;
+								var placeHolderQueen = isItWhitesTurn ? 'q' : 'Q';
+								CandidateLegalMoves[newCoords] = calculateBoardState(CandidateLegalMoves[newCoords], newCoords, placeHolderQueen);
+							}
+
+
 						}
+
+
+
 					}
 				}
 				 
@@ -331,7 +342,7 @@ function getLegalMoves(coord, bstate){
 		break;
 		case 'N':
 		case 'n':
-
+			//var t = performance.now();
 			let boardMissingKnight = calculateBoardState(boardWithDefaultExtState, coord, '_');
 		
 			var startY = coord.charCodeAt(0) - 96; 
@@ -361,14 +372,16 @@ function getLegalMoves(coord, bstate){
 					}
 				}
 			}
+			//time  +=  performance.now() - t;
 		break;
 		case 'b':
 		case 'B':
-			var extendedState =  defaultExtendedState;
-			findAllMovesInLine(+1, +1, extendedState);
-			findAllMovesInLine(+1, -1, extendedState);
-			findAllMovesInLine(-1, +1, extendedState);	
-			findAllMovesInLine(-1, -1, extendedState);
+			//var t = performance.now();
+			findAllMovesInLine(+1, +1, defaultExtendedState);
+			findAllMovesInLine(+1, -1, defaultExtendedState);
+			findAllMovesInLine(-1, +1, defaultExtendedState);	
+			findAllMovesInLine(-1, -1, defaultExtendedState);
+			//tb  +=  performance.now() - t;
 		break;
 		case 'k':
 		case 'K':
@@ -495,15 +508,14 @@ function getLegalMoves(coord, bstate){
 		break;
 		case 'q':
 		case 'Q':
-			var extendedState =  defaultExtendedState;
-			findAllMovesInLine(+1,+1, extendedState);
-			findAllMovesInLine(+1, 0, extendedState);	
-			findAllMovesInLine(+1,-1, extendedState);
-			findAllMovesInLine(0, +1, extendedState);	
-			findAllMovesInLine(0, -1, extendedState);	
-			findAllMovesInLine(-1,+1, extendedState);	
-			findAllMovesInLine(-1, 0, extendedState);	
-			findAllMovesInLine(-1,-1, extendedState);
+			findAllMovesInLine(+1,+1, defaultExtendedState);
+			findAllMovesInLine(+1, 0, defaultExtendedState);	
+			findAllMovesInLine(+1,-1, defaultExtendedState);
+			findAllMovesInLine(0, +1, defaultExtendedState);	
+			findAllMovesInLine(0, -1, defaultExtendedState);	
+			findAllMovesInLine(-1,+1, defaultExtendedState);	
+			findAllMovesInLine(-1, 0, defaultExtendedState);	
+			findAllMovesInLine(-1,-1, defaultExtendedState);
 		break;
 		case '_':
 			previouslySelectedSquare = null;
@@ -529,7 +541,7 @@ function markLegalMoves(coord){
 	var currentSquare = document.getElementById(coord);	
 	currentSquare.innerHTML = '<img src="assets/SelectedSquare.png" class="overlay" >' +  currentSquare.innerHTML; // Show green selection
 	
-	var legalMoves = getLegalMoves(coord);
+	var legalMoves = getLegalMoves(coord, gamestate);
 	for (const move of Object.keys(legalMoves)) {	
 		var newSquare = document.getElementById(move);
 		
@@ -568,20 +580,26 @@ var promotionContext = false;
 function selectSquare(coord){
 
 	console.log("clicked on " + coord);
-	if(promotionContext){
+	
+	// Indicates the promotion window was open and should now be closed. 
+	if(promotionContext){	
 		// Close the pawn promotion window if player clicks off it.
 		document.getElementById('chessboard').style.opacity = 1.0;
 		document.getElementById('promotionOverlay').style.display = 'none';
 		document.getElementById('promotionOverlayBlack').style.display = 'none';
+
 		promotionContext = false;
-		
+		renderBoard(gamestate);
+
 		// TODO, have this work if you click off of the board all together.
+		return;
 	}
 	
-
+	// If still waiting for the CPU to play
 	if( gameMetaData.isWhiteCPU &&  (gamestate.isWhitesTurn()) ){ console.log("White to play. Waiting for CPU"); return;} 
 	if( gameMetaData.isBlackCPU && !(gamestate.isWhitesTurn()) ){ console.log("Black to play. Waiting for CPU"); return;} 
 	
+	// Click on a square to display legal moves.
 	if(previouslySelectedSquare == null){
 	
 		var newSelectedPiece = getPiece(coord);
@@ -612,17 +630,20 @@ function selectSquare(coord){
 		while (elements.length > 0) elements[0].remove();
 		
 		// Validate the move is in the set of legal moves
-		var legalMoves = getLegalMoves(previouslySelectedSquare);
+		var legalMoves = getLegalMoves(previouslySelectedSquare, gamestate);
 		
 		if(legalMoves[coord]){
 			
-			// TODO
-			if(legalMoves[coord].promotion){
+			// PROMOTION LOGIC: Check that a pawn is being moved to the last rank.
+			if(getPiece(previouslySelectedSquare).toLowerCase() == 'p' && (coord.match('.8') || coord.match('.1')) ){ 
 				
+				console.log("PROMOTION LOGIC");
+				// Show pawn promotion window
 				promotionContext = previouslySelectedSquare + ';' + coord;
+				renderBoard(gamestate, promotionContext);
+
 				document.getElementById('chessboard').style.opacity = 0.3;
 				
-				// Show pawn promotion window
 				if(gamestate.isWhitesTurn()){
 					document.getElementById('promotionOverlay').style.display = 'block';
 				}else{
@@ -631,16 +652,12 @@ function selectSquare(coord){
 				return;
 			}
 			
-			// Process move:
-			// Update gamestate and gameextended state.
+			// PROCESS NON-PROMOTION MOVE:
 			gamestate = legalMoves[coord];
-						
-			console.log("rendering");
 			renderBoard(gamestate, (coord + ';' + previouslySelectedSquare));
-			console.log("rendered");
 
 			// Update turn 
-			turnTransition();
+			EndTurn();
 			previouslySelectedSquare = null;
 			
 		}else{
@@ -742,7 +759,9 @@ function existsLegalMoves(gamestate){
 	return false;
 }
 
-function turnTransition(){
+function EndTurn(){
+	previouslySelectedSquare = null;
+	promotionContext = false;
 
 	// Check if in stalemate / checkmate
 	// Use this to get next possible moves from this state. First get all allied piece (this is for speed)
@@ -782,8 +801,9 @@ function turnTransition(){
 			gamestate = totalstate;
 
 			renderBoard(gamestate, changedCoords);
-			turnTransition();
+			EndTurn();
 	}} , 20)
+
 
 	return
 	
@@ -804,28 +824,24 @@ function stalemate(){
 	Console.log("stalemate!");
 	document.body = document.body.innerHTML += '<p> Stalemate!</p>';
 }
+
 function promotePawn(newPiece){
 	
+	// Process Move
+	console.log("Promotion context@ " + promotionContext);
+
+	var pawnFrom = promotionContext.split(';')[0];
+	var pawnTo = promotionContext.split(';')[1];
+
+	var placeholderstate = getLegalMoves(pawnFrom, gamestate)[pawnTo];
+	gamestate = calculateBoardState(placeholderstate, pawnTo, newPiece);
+	
+	renderBoard(gamestate, promotionContext);
+	
+	// Hide the overlay
 	document.getElementById('chessboard').style.opacity = 1.0;
 	document.getElementById('promotionOverlay').style.display = 'none';
 	document.getElementById('promotionOverlayBlack').style.display = 'none';
 	
-	// Process Move
-	var previousPawnSquare = promotionContext.split(";")[0];
-	var newSquare = promotionContext.split(";")[1];
-	
-	console.log(previousPawnSquare);
-	gamestate = calculateBoardState(gamestate, newSquare, newPiece);
-	gamestate = calculateBoardState(gamestate, previousPawnSquare, "_");
-	
-	// gameMetaData.lastMovedPieceTo = previousPawnSquare;
-	// gameMetaData.lastMovedPieceFrom = newSquare;
-	
-	renderBoard(gamestate, (previousPawnSquare + ';' + newSquare));
-	// extendedState.isWhitesTurn = !(extendedState.isWhitesTurn);
-	// TODO - turn transition when promotion
-	turnTransition();
-	 
-	previouslySelectedSquare = null;
-	promotionContext = false;
+	EndTurn();
 }
