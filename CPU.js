@@ -31,7 +31,6 @@ var AllAnalysedStatesClone = {};
 // best move is the one with the best score.
 // the score(state, depth) is defined as the best move of the children to depth - 1
 // returns {bestState: bestState, bestScore: bestScore}
-var global;
 function bestMoveToDepth(startingState, depth){
 
 	// See if state has already been analsed. If not, create the state in AllAnalysedStates
@@ -43,12 +42,12 @@ function bestMoveToDepth(startingState, depth){
 		return {bestState: analysedStartingState.BestChild, bestScore: analysedStartingState.Score};
 	}
 	
-	global = analysedStartingState;
 	// If ChildStates have already been calculated, use that, otherwise calculate it.
-	if(! analysedStartingState.ChildStates) { analysedStartingState.ChildStates = getAllChildStates(startingState); }
+	if(! analysedStartingState.ChildStates) { analysedStartingState.ChildStates = calculateChildStates(startingState); }
 	
 	var bestState;
 	var bestScore;
+	var isWhitesTurn = analysedStartingState.State.isWhitesTurn();
 	for(var possState of analysedStartingState.ChildStates){
 		var analysedPossState = createOrGetAnalysedState(possState);
 		
@@ -60,15 +59,15 @@ function bestMoveToDepth(startingState, depth){
 		}
 		
 		// Now we can be sure that we have already analysed this state to sufficient depth. Now we simply min_max
-		if(analysedPossState.State.isWhitesTurn()){ // this is a quick and dirty equivalent to - if(extendedState.isWhitesTurn)
+		if(isWhitesTurn){ 
 			// white wants to find highest score;
-			if( (analysedPossState.Score < bestScore) || (bestScore == null) ){
+			if( (analysedPossState.Score > bestScore) || (bestScore == null) ){
 				bestScore = analysedPossState.Score;
 				bestState = analysedPossState.State;
 			}
 		}else{
 			// black wants to find lowest score;
-			if( (analysedPossState.Score > bestScore) || (bestScore == null) ){
+			if( (analysedPossState.Score < bestScore) || (bestScore == null) ){
 				bestScore = analysedPossState.Score;
 				bestState = analysedPossState.State;
 			}
@@ -128,9 +127,9 @@ function cloneAnalysedSubTree(rootState, depthLimit){
 	}
 	AllAnalysedStatesClone[hashCode] = rootState;
 }
-
+var global;
 // Returns all states as a list in format:
-function getAllChildStates(totalstate){
+function calculateChildStates(totalstate){
 	
 	var allPossibleMoves = [];
 	
@@ -162,13 +161,13 @@ function getAllChildStates(totalstate){
 
 	// Inidicates no legal moves can be played - i.e. check/stalemate
 	if(allPossibleMoves.length === 0){
-
 		// The state should already have been analysted before we are calculating childstates for it!
-		var thisAnalystedtate = getAnalysedStates(gamestate);
-		if( amIInCheck(gamestate, gamestate.isWhitesTurn()) ){
-			
+		var thisAnalystedtate = getAnalysedStates(totalstate);
+		global = thisAnalystedtate;
+		if( amIInCheck(totalstate, gamestate.isWhitesTurn()) ){
+			console.log("found checkmate state: " + totalstate);
 			// checkmate
-			if(whitesTurn){ 
+			if(totalstate.isWhitesTurn()){ 
 				thisAnalystedtate.Score = -10000;
 			}else{ 							
 				thisAnalystedtate.Score = +10000;
