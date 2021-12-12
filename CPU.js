@@ -104,15 +104,7 @@ function createOrGetAnalysedState(stateString){
 		BestChild: null,
 		State: stateString
 	}
-	if( (baseScore > 1000) || (baseScore < -1000) ){
-		// indicates checkmate/stalemate. 
-		AnalysedState.Depth = 1000000;
-		if(baseScore === 6969){
-			// stalemate special code.
-			AnalysedState.Score = 0;
-		}
-		AnalysedState.ChildStates = [stateString]; // Cant remember why this is necessary. Probably prevents trying to find non existent child states.
-	}
+
 	AllAnalysedStates[hashCode] = AnalysedState;
 	
 	return AnalysedState;
@@ -160,12 +152,36 @@ function getAllChildStates(totalstate){
 			let legalMoves = getLegalMoves(currentPieceCoords, totalstate);
 			
 			for (const move of Object.keys(legalMoves)) {
-				// concatenates the legal moves for this coordinate 
+				
+				// Concatenates the legal moves for this coordinate 
 				allPossibleMoves = allPossibleMoves.concat( legalMoves[move] );
-				// TODO, handle case of promotion!
+			
 			}
 		}
 	}
+
+	// Inidicates no legal moves can be played - i.e. check/stalemate
+	if(allPossibleMoves.length === 0){
+
+		// The state should already have been analysted before we are calculating childstates for it!
+		var thisAnalystedtate = getAnalysedStates(gamestate);
+		if( amIInCheck(gamestate, gamestate.isWhitesTurn()) ){
+			
+			// checkmate
+			if(whitesTurn){ 
+				thisAnalystedtate.Score = -10000;
+			}else{ 							
+				thisAnalystedtate.Score = +10000;
+			}				
+		}else{
+			// stalemate score is zero.
+			thisAnalystedtate.Score = 0;
+		}
+		// Once in mate, always in mate. So this is known to infinite depth, and allchildstates is just this state.
+		thisAnalystedtate.Depth = 10000;
+		return [totalstate];
+	}
+
 	return allPossibleMoves;
 }
 
@@ -173,23 +189,6 @@ function calculateMaterialScore(gamestate){
 	
 	let score = 0;
 
-	// Determine whether in checkmate or in stalemate!
-	var whitesTurn = gamestate.isWhitesTurn();
-	if(!existsLegalMoves(gamestate, whitesTurn)){
-		if(amIInCheck(gamestate, whitesTurn)){
-		
-			// checkmate
-			if(whitesTurn){ 
-				return -10000;
-			}else{ 							
-				return +10000; 
-			}				
-		}else{
-			// stalemate score is zero. This is a cludge return code representing a stalemate state.
-			return 6969; 
-		}
-	}
-	
 	for (let x = 0; x < 72 ; x++) {
 		switch(gamestate[x]) {
 			case '_':
