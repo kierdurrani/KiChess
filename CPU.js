@@ -23,6 +23,7 @@ String.prototype.isWhitesTurn = function isItWhitesTurn() {
 	 return (this[73] === '1');
 };
 
+
 // Hashtable of lists of analysed States
 var AllAnalysedStates = {};
 var AllAnalysedStatesClone = {};
@@ -110,7 +111,7 @@ function createOrGetAnalysedState(stateString){
 			// stalemate special code.
 			AnalysedState.Score = 0;
 		}
-		AnalysedState.ChildStates = [stateString]; // Cant remember why this works. Probably prevents trying to find non existent child states.
+		AnalysedState.ChildStates = [stateString]; // Cant remember why this is necessary. Probably prevents trying to find non existent child states.
 	}
 	AllAnalysedStates[hashCode] = AnalysedState;
 	
@@ -171,8 +172,7 @@ function getAllChildStates(totalstate){
 function calculateMaterialScore(gamestate){
 	
 	let score = 0;
-	// TODO, make faster so that extendedState is not necessary.
-	// console.log(gamestate);
+
 	// Determine whether in checkmate or in stalemate!
 	var whitesTurn = gamestate.isWhitesTurn();
 	if(!existsLegalMoves(gamestate, whitesTurn)){
@@ -185,7 +185,7 @@ function calculateMaterialScore(gamestate){
 				return +10000; 
 			}				
 		}else{
-			// stalemate score is zero. This is a cludge to get the return code 
+			// stalemate score is zero. This is a cludge return code representing a stalemate state.
 			return 6969; 
 		}
 	}

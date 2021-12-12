@@ -193,8 +193,7 @@ function getLegalMoves(coord, gamestate){
 		}
 	}
 	////////////// ATTEMPTED PERFOMANCE IMPROVEMENTS
-	var startX = coord.charCodeAt(0) - 96;
-	var startY =  Number(coord[1]);
+
 	// var piece is defined outside
 	function findAllMovesInLine(dx, dy, extendedState){
 		
@@ -332,6 +331,9 @@ function getLegalMoves(coord, gamestate){
 
 			}
 
+			var startX = coord.charCodeAt(0) - 96;
+			var startY =  Number(coord[1]);
+
 			findAllMovesInLine(0, +1, rookExState);
 			findAllMovesInLine(+1, 0, rookExState);
 			findAllMovesInLine(0, -1, rookExState);
@@ -374,7 +376,9 @@ function getLegalMoves(coord, gamestate){
 		break;
 		case 'b':
 		case 'B':
-
+			var startX = coord.charCodeAt(0) - 96;
+			var startY =  Number(coord[1]);
+			
 			findAllMovesInLine(+1, +1, defaultExtendedState);
 			findAllMovesInLine(+1, -1, defaultExtendedState);
 			findAllMovesInLine(-1, +1, defaultExtendedState);	
@@ -506,6 +510,9 @@ function getLegalMoves(coord, gamestate){
 		break;
 		case 'q':
 		case 'Q':
+			var startX = coord.charCodeAt(0) - 96;
+			var startY =  Number(coord[1]);
+			
 			findAllMovesInLine(+1,+1, defaultExtendedState);
 			findAllMovesInLine(+1, 0, defaultExtendedState);	
 			findAllMovesInLine(+1,-1, defaultExtendedState);
