@@ -173,13 +173,11 @@ function getLegalMoves(coord, gamestate){
 	}
 	
 	const defaultExtendedState = (isItWhitesTurn ? '0' : '1') + gamestate.substring(74, 78) + '__';
-	var startX = coord.charCodeAt(0) - 96;
-	var startY =  Number(coord[1]);
+	var boardWithDefaultExtState = gamestate.substring(0, 72) + '|' + defaultExtendedState; 
 
 	// var piece is defined outside
-	function findLineMoves(diagonal, extendedState){
-		// diagonal = true for bishop moves. diagonal = false for rook moves.
-
+	function findAllMovesInLine(diagonal, extendedState){
+		
 		// Removes the piece from its starting square - (since this )
 		const DefaultNextState = calculateBoardState(gamestate.substring(0, 72) + '|' + extendedState, coord, '_'); 
 		if(diagonal){
@@ -238,8 +236,7 @@ function getLegalMoves(coord, gamestate){
 		case 'P':
 				// Represents the direction pawns move in. Use the fact black and white pawns do the same thing but in opposite directions.
 				var direction = (piece === "p") ? 1 : -1;
-				var boardWithDefaultExtState = gamestate.substring(0, 72) + '|' + defaultExtendedState; 
-
+	
 				var newCoords = transCoords(coord, 0, direction * 1);
 				
 				// Pawn can move forwards
@@ -323,14 +320,22 @@ function getLegalMoves(coord, gamestate){
 
 			}
 
+			var startX = coord.charCodeAt(0) - 96;
+			var startY =  Number(coord[1]);
 
-
-			findLineMoves(false, rookExState);
+			// findAllMovesInLine(0, +1, rookExState);
+			// findAllMovesInLine(+1, 0, rookExState);
+			// findAllMovesInLine(0, -1, rookExState);
+			// findAllMovesInLine(-1, 0, rookExState);
+			findAllMovesInLine(false, rookExState);
 		break;
 		case 'N':
 		case 'n':
 
-			let boardMissingKnight = calculateBoardState(gamestate.substring(0, 72) + '|' + defaultExtendedState, coord, '_');
+			let boardMissingKnight = calculateBoardState(boardWithDefaultExtState, coord, '_');
+		
+			var startY = coord.charCodeAt(0) - 96; 
+			var startX = Number(coord[1]);
 
 			const coordChangeArray = [2, 1, -1, -2];
 	
@@ -359,8 +364,15 @@ function getLegalMoves(coord, gamestate){
 
 		break;
 		case 'b':
-		case 'B':			
-			findLineMoves(true, defaultExtendedState);
+		case 'B':
+			var startX = coord.charCodeAt(0) - 96;
+			var startY =  Number(coord[1]);
+			
+			// findAllMovesInLine(+1, +1, defaultExtendedState);
+			// findAllMovesInLine(+1, -1, defaultExtendedState);
+			// findAllMovesInLine(-1, +1, defaultExtendedState);	
+			// findAllMovesInLine(-1, -1, defaultExtendedState);
+			findAllMovesInLine(true, defaultExtendedState);
 		break;
 		case 'k':
 		case 'K':
@@ -391,7 +403,7 @@ function getLegalMoves(coord, gamestate){
 			}
 			
 			// IF ABLE TO CASTLE...
-			if(isItWhitesTurn){
+			if( piece === 'k'){
 
 				// White long/a1 side castle.  king starts at E1, and moves to B1
 				if(gamestate[74] == 1){
@@ -487,8 +499,19 @@ function getLegalMoves(coord, gamestate){
 		break;
 		case 'q':
 		case 'Q':
-			findLineMoves(false, defaultExtendedState);
-			findLineMoves(true, defaultExtendedState);
+			var startX = coord.charCodeAt(0) - 96;
+			var startY =  Number(coord[1]);
+
+			// findAllMovesInLine(+1,+1, defaultExtendedState);
+			// findAllMovesInLine(+1, 0, defaultExtendedState);	
+			// findAllMovesInLine(+1,-1, defaultExtendedState);
+			// findAllMovesInLine(0, +1, defaultExtendedState);	
+			// findAllMovesInLine(0, -1, defaultExtendedState);	
+			// findAllMovesInLine(-1,+1, defaultExtendedState);	
+			// findAllMovesInLine(-1, 0, defaultExtendedState);	
+			// findAllMovesInLine(-1,-1, defaultExtendedState);
+			findAllMovesInLine(false, defaultExtendedState);
+			findAllMovesInLine(true, defaultExtendedState);
 		break;
 		case '_':
 			previouslySelectedSquare = null;
