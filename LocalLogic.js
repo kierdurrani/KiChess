@@ -102,7 +102,7 @@ function amIInCheck(board, isWhiteTeam)
 	var allVisibleDiagonals = [getVisibleEnemyToKing( +1, +1), getVisibleEnemyToKing( +1, -1), 
 							   getVisibleEnemyToKing( -1, +1), getVisibleEnemyToKing( -1, -1)];		
 	
-    for( var visibleEnemy of allVisibleDiagonals){
+    for( let visibleEnemy of allVisibleDiagonals){
 		if( !visibleEnemy ){ continue; } // Catch possible null value error here..
 		if( ['b','B','q','Q'].includes(visibleEnemy) ){ return true; }
 	}
@@ -111,7 +111,7 @@ function amIInCheck(board, isWhiteTeam)
 	var allVisibleVerticals = [getVisibleEnemyToKing( +1, 0), getVisibleEnemyToKing( 0, -1), 
 							   getVisibleEnemyToKing( -1, 0), getVisibleEnemyToKing( 0, +1)];	
                                
-	for( var visibleEnemy of allVisibleVerticals){
+	for( let visibleEnemy of allVisibleVerticals){
 		if( !visibleEnemy ){ continue; } // Catch possible null value error here..
 		if( ['r','R','q','Q'].includes(visibleEnemy) ){ return true; }
 	}
@@ -132,7 +132,7 @@ function amIInCheck(board, isWhiteTeam)
 								getPieceRelativeToKing( -2,  +1), getPieceRelativeToKing( -2,  -1)];		
 	
     var EnemyKnight = isWhiteTeam ? 'N' : 'n';
-    for( var possibleEnemyKnight of possibleKnightCoords){				 
+    for( let possibleEnemyKnight of possibleKnightCoords){				 
 		if(  possibleEnemyKnight === EnemyKnight ){ return true; } 
 	}
 	
@@ -141,14 +141,13 @@ function amIInCheck(board, isWhiteTeam)
 					 		getPieceRelativeToKing( +0, -1), getPieceRelativeToKing( -1, -1), getPieceRelativeToKing( -1, +0), getPieceRelativeToKing( -1, +1) ];
 
     var EnemyKing = isWhiteTeam ? 'K' : 'k';
-    for( var possibleEnemyKing of possibleEnemyKings){				 
+    for( let possibleEnemyKing of possibleEnemyKings){				 
         if(  possibleEnemyKing === EnemyKing ){ return true; } 
     }
 	
 	// else
 	return false;
 }
-
 
 function getLegalMoves(coord, gamestate){
 
@@ -159,11 +158,8 @@ function getLegalMoves(coord, gamestate){
 	
 	// Logic works as follows:
 	// A hash table called CandidateLegalMoves with keys of the coordinate you click on to make the move is defined.
-	// The hash table contains an object with properties: gamestate = string rep of the board
-	// Assume that enpassanable will be no unless specified.
-	// Example:
-	// CandidateLegalMoves[newCoords] = {gamestate : calculateBoardState(calculateBoardState(gamestate, coord, '_'), newCoords, piece), extendedStateChange : {"Enpassant": 'h1'}, promotion: h8};
-	
+	// The values are the totalstate of the game after the move has been processed.
+
 	// Auxillary functions:
 	function isEnemyPiece(piece){
 		if(piece === "_") {return false;}
@@ -172,9 +168,8 @@ function getLegalMoves(coord, gamestate){
 		return !(isWhitePiece === isItWhitesTurn);
 	}
 	
-	const defaultExtendedState = (isItWhitesTurn ? '0' : '1') + gamestate.substring(74, 78) + '__';
-	var startX = coord.charCodeAt(0) - 96;
-	var startY =  Number(coord[1]);
+	const defaultExtendedState = ((isItWhitesTurn ? '0' : '1') + gamestate.substring(74, 78) + '__');
+		
 
 	// var piece is defined outside
 	function findLineMoves(diagonal, extendedState){
@@ -274,7 +269,7 @@ function getLegalMoves(coord, gamestate){
 				
 				// Pawn can take diagonally - and enpassant diagonally
 				var allCoords = [transCoords(coord, 1, direction * 1), transCoords(coord, -1, direction * 1) ];
-				for(var newCoords of allCoords)
+				for(let newCoords of allCoords)
 				{
 					if(newCoords == null) { continue; }	
 	
@@ -332,6 +327,9 @@ function getLegalMoves(coord, gamestate){
 
 			let boardMissingKnight = calculateBoardState(gamestate.substring(0, 72) + '|' + defaultExtendedState, coord, '_');
 
+			var startY = coord.charCodeAt(0) - 96; 
+			var startX = Number(coord[1]);
+
 			const coordChangeArray = [2, 1, -1, -2];
 	
 			for (const dy of coordChangeArray) {
@@ -360,6 +358,8 @@ function getLegalMoves(coord, gamestate){
 		break;
 		case 'b':
 		case 'B':			
+			var startX = coord.charCodeAt(0) - 96;
+			var startY =  Number(coord[1]);
 			findLineMoves(true, defaultExtendedState);
 		break;
 		case 'k':
@@ -368,7 +368,7 @@ function getLegalMoves(coord, gamestate){
 			var allCoords = [transCoords(coord, 1, 1), transCoords(coord, 1, 0), transCoords(coord, 1, -1), transCoords(coord, 0, 1),	
 							 transCoords(coord, 0, -1), transCoords(coord, -1, -1), transCoords(coord, -1, 0), transCoords(coord, -1, 1) ];
 			
-			for(var possCoords of allCoords){
+			for(let possCoords of allCoords){
 				// Possible null value error here..
 				if( !possCoords ){ continue; }
 
@@ -487,6 +487,9 @@ function getLegalMoves(coord, gamestate){
 		break;
 		case 'q':
 		case 'Q':
+			var startX = coord.charCodeAt(0) - 96;
+			var startY =  Number(coord[1]);
+
 			findLineMoves(false, defaultExtendedState);
 			findLineMoves(true, defaultExtendedState);
 		break;
@@ -698,7 +701,7 @@ function renderBoard(state, highlightedSquares){
 	// Highlight squares.
 	if(highlightedSquares){
 		var highlightCoords = highlightedSquares.split(';');
-		for(var coords of highlightCoords){
+		for(let coords of highlightCoords){
 			var highlightMe = document.getElementById(coords);
 			highlightMe.innerHTML = '<img src="assets/LastMovedPiece.png" height = 98px width = 98px, style = "opacity: 0.6"  >' +  highlightMe.innerHTML ;
 		}
