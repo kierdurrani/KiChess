@@ -17,18 +17,6 @@ function calculateBoardState(state, coord, newPiece){
 		
 	return( state.substring(0, index) + newPiece + state.substring(index + 1) );
 }
-function calculateBoardState2(state, coord1, newPiece1, coord2, newPiece2){
-	// Modifies the board state, twice 
-	var index1 = 9 * (8 - Number(coord1[1])) + coord1.charCodeAt(0) - 97;
-	var index2 = 9 * (8 - Number(coord2[1])) + coord2.charCodeAt(0) - 97;
-	
-	if(index1 < index2){
-		return( state.substring(0, index1) + newPiece1 + state.substring(index1 + 1, index2) + newPiece2 + state.substring(index2 + 1));
-	}else{
-		return( state.substring(0, index2) + newPiece2 + state.substring(index2 + 1, index1) + newPiece1 + state.substring(index1 + 1));
-	}
-
-}
 
 function transCoords(coord, y, x){
 	var newRank = coord.charCodeAt(0) - 96 + y; 
@@ -174,59 +162,83 @@ function getLegalMoves(coord, gamestate){
 	
 	const defaultExtendedState = (isItWhitesTurn ? '0' : '1') + gamestate.substring(74, 78) + '__';
 	var boardWithDefaultExtState = gamestate.substring(0, 72) + '|' + defaultExtendedState; 
+	
+	// TODO, performance improvements:
+	function findAllMovesInLineOLD(x, y, extendedState){
+		
+		var iter = 1;
+		var newCoords = transCoords(coord, x * iter, y * iter);
 
+		while( newCoords )
+		{
+			var pieceOnSquare = getPiece2(gamestate, newCoords);
+			if(  pieceOnSquare == '_'){
+				
+				// Modify the board state to the new state and appednd the 
+				CandidateLegalMoves[newCoords] =  calculateBoardState(calculateBoardState(boardWithDefaultExtState, coord, '_'), newCoords, piece);
+				
+			}else{ 
+				if(isEnemyPiece(pieceOnSquare)){
+
+					// Modify the board state to the new state and appednd the 
+					CandidateLegalMoves[newCoords] =   calculateBoardState(calculateBoardState(boardWithDefaultExtState, coord, '_'), newCoords, piece);
+
+					break; // Can capture an enemy piece, but cant keep moving after.
+				}else{
+					break; // Cannot capture allied piece, or jump over it.
+				}
+			}
+			iter++;
+			newCoords = transCoords(coord, x * iter, y * iter);
+		}
+	}
+	////////////// ATTEMPTED PERFOMANCE IMPROVEMENTS
+	var startX = coord.charCodeAt(0) - 96;
+	var startY =  Number(coord[1]);
 	// var piece is defined outside
-	function findAllMovesInLine(diagonal, extendedState){
+	function findAllMovesInLine(dx, dy, extendedState){
+		
+		var iter = 1;
+		var newX = startX + dx;
+		var newY = startY + dy;
 		
 		// Removes the piece from its starting square - (since this )
 		const DefaultNextState = calculateBoardState(gamestate.substring(0, 72) + '|' + extendedState, coord, '_'); 
-		if(diagonal){
-			work(+1,-1);
-			work(+1,+1);
-			work(-1,-1);
-			work(-1,+1);
-		}else{
-			work(+1, 0);
-			work(-1, 0);
-			work( 0, -1);
-			work( 0, +1);
-		}
-		
-		function work(dx, dy){
-			var iter = 1;
-			var newX = startX + dx;
-			var newY = startY + dy;  
-			while( newX <= 8 && newY <= 8 && newX >= 1 && newY >= 1 )
-			{
-				// Rows are enumerated 'backwards' and are 9 chars long due to colon seperator.
-				// Cols are determined by the leading letter. This formula converts a char into its corresponding integer from 0-7
 
-				var index = 9 * (8 - newY) + newX - 1;
-				var pieceOnSquare = gamestate[index];
+		while( newX <= 8 && newY <= 8 && newX >= 1 && newY >= 1 )
+		{
+			// Rows are enumerated 'backwards' and are 9 chars long due to colon seperator.
+			// Cols are determined by the leading letter. This formula converts a char into its corresponding integer from 0-7
 
-				if(  pieceOnSquare == '_'){
-					// The piece is moving to an empty square
+			var index = 9 * (8 - newY) + newX - 1;
 
+			var pieceOnSquare = gamestate[index];
+
+			if(  pieceOnSquare == '_'){
+				// The piece is moving to an empty square
+
+				var ToCoords = String.fromCharCode(newX + 96) + newY;
+				CandidateLegalMoves[ToCoords] = DefaultNextState.substring(0, index) + piece + DefaultNextState.substring(index + 1);
+			}else{ 
+				if(isEnemyPiece(pieceOnSquare)){
+
+					// Represents the piece taking the enemy piece
 					var ToCoords = String.fromCharCode(newX + 96) + newY;
 					CandidateLegalMoves[ToCoords] = DefaultNextState.substring(0, index) + piece + DefaultNextState.substring(index + 1);
-				}else{ 
-					if(isEnemyPiece(pieceOnSquare)){
-
-						// Represents the piece taking the enemy piece
-						var ToCoords = String.fromCharCode(newX + 96) + newY;
-						CandidateLegalMoves[ToCoords] = DefaultNextState.substring(0, index) + piece + DefaultNextState.substring(index + 1);
-						break; 
-					}else{
-						// Cannot capture allied piece, or jump over it.
-						break; 
-					}
+					break; 
+				}else{
+					// Cannot capture allied piece, or jump over it.
+					break; 
 				}
-				var newX = startX + iter * dx;
-				var newY = startY + iter * dy;
-				iter++;
 			}
+			iter++;
+			var newX = startX + iter * dx;
+			var newY = startY + iter * dy;
 		}
 	}
+
+
+	//////// END 
 
 	/////////////////////////////	MAIN LOGIC	///////////////////////////////////
 	
@@ -242,7 +254,7 @@ function getLegalMoves(coord, gamestate){
 				// Pawn can move forwards
 				if( newCoords && getPiece2(gamestate, newCoords) === "_" ){
 					
-					var totalstate = calculateBoardState2(boardWithDefaultExtState, coord, '_', newCoords, piece);
+					var totalstate = calculateBoardState(calculateBoardState(boardWithDefaultExtState, coord, '_'), newCoords, piece);
 	
 					
 					if(newCoords.match('.8') || newCoords.match('.1')){ 
@@ -262,7 +274,7 @@ function getLegalMoves(coord, gamestate){
 						newCoords = transCoords(coord, 0, direction * 2);
 						if( getPiece2(gamestate, newCoords) === "_" )
 						{
-							var totalstate = calculateBoardState2(boardWithDefaultExtState, coord, '_', newCoords, piece);
+							var totalstate = calculateBoardState(calculateBoardState(boardWithDefaultExtState, coord, '_'), newCoords, piece);
 							totalstate = totalstate.substring(0, 78) + transCoords(coord, 0, direction * 1); 	// This means the piece is enpassantable 
 							CandidateLegalMoves[newCoords] = totalstate;
 						}	
@@ -280,7 +292,7 @@ function getLegalMoves(coord, gamestate){
 					{
 						// In case pawn ends up on final rank, add the coords of the pawn which can be promoted to the state string.
 						var promotion = (newCoords.match('.8') || newCoords.match('.1')) ? '' : newCoords;
-						CandidateLegalMoves[newCoords] = calculateBoardState2(boardWithDefaultExtState, coord, '_', newCoords, piece) + promotion;
+						CandidateLegalMoves[newCoords] = calculateBoardState(calculateBoardState(boardWithDefaultExtState, coord, '_'), newCoords, piece) + promotion;
 						
 						// If this an en-passant, need to remove the enemy pawn. 
 						if( newCoords ===  enpassantablePawn){
@@ -308,7 +320,7 @@ function getLegalMoves(coord, gamestate){
 		case 'r':
 			
 			var rookExState = defaultExtendedState;
-			// DISABLE CASTLING WHEN ROOK MOVES (MODIFY EXTENDED STATE)
+			// DISABLE CASTLING WHEN ROOK MOVES
 			switch(coord)
 			{
 				// This indicates rook has moved from starting square (or has moved from another rook's staring square, which doesnt matter).
@@ -320,14 +332,11 @@ function getLegalMoves(coord, gamestate){
 
 			}
 
-			var startX = coord.charCodeAt(0) - 96;
-			var startY =  Number(coord[1]);
-
-			// findAllMovesInLine(0, +1, rookExState);
-			// findAllMovesInLine(+1, 0, rookExState);
-			// findAllMovesInLine(0, -1, rookExState);
-			// findAllMovesInLine(-1, 0, rookExState);
-			findAllMovesInLine(false, rookExState);
+			findAllMovesInLine(0, +1, rookExState);
+			findAllMovesInLine(+1, 0, rookExState);
+			findAllMovesInLine(0, -1, rookExState);
+			findAllMovesInLine(-1, 0, rookExState);
+			
 		break;
 		case 'N':
 		case 'n':
@@ -365,14 +374,12 @@ function getLegalMoves(coord, gamestate){
 		break;
 		case 'b':
 		case 'B':
-			var startX = coord.charCodeAt(0) - 96;
-			var startY =  Number(coord[1]);
-			
-			// findAllMovesInLine(+1, +1, defaultExtendedState);
-			// findAllMovesInLine(+1, -1, defaultExtendedState);
-			// findAllMovesInLine(-1, +1, defaultExtendedState);	
-			// findAllMovesInLine(-1, -1, defaultExtendedState);
-			findAllMovesInLine(true, defaultExtendedState);
+
+			findAllMovesInLine(+1, +1, defaultExtendedState);
+			findAllMovesInLine(+1, -1, defaultExtendedState);
+			findAllMovesInLine(-1, +1, defaultExtendedState);	
+			findAllMovesInLine(-1, -1, defaultExtendedState);
+
 		break;
 		case 'k':
 		case 'K':
@@ -397,7 +404,7 @@ function getLegalMoves(coord, gamestate){
 						newExtendedState = newExtendedState.substring(0, 3) + '0' + newExtendedState.substring(4); 
 						newExtendedState = newExtendedState.substring(0, 4) + '0' + newExtendedState.substring(5); 
 					}
-					CandidateLegalMoves[possCoords] = calculateBoardState2(gamestate, coord, '_', possCoords, piece).substring(0, 72) + '|' +  newExtendedState;
+					CandidateLegalMoves[possCoords] = calculateBoardState(calculateBoardState(gamestate, coord, '_'), possCoords, piece).substring(0, 72) + '|' +  newExtendedState;
 			
 				}
 			}
@@ -412,14 +419,14 @@ function getLegalMoves(coord, gamestate){
 						// Verify not initially in check, and all intermediate squares are not threatened.
 						if( ! amIInCheck(gamestate, isItWhitesTurn) ){
 						
-							var intState1 = calculateBoardState(gamestate, 'e1', '_', 'd1', 'k');
+							var intState1 = calculateBoardState(calculateBoardState(gamestate, 'e1', '_'), 'd1', 'k');
 							if( !amIInCheck(intState1, isItWhitesTurn) ){
 								
-								var intState2 = calculateBoardState2(intState1, 'd1', '_', 'c1', 'k');
+								var intState2 = calculateBoardState(calculateBoardState(intState1, 'd1', '_'), 'c1', 'k');
 								if( !amIInCheck(intState2, isItWhitesTurn) ){
 									
-									var intState3 = calculateBoardState2(intState2, 'c1', '_', 'b1', 'k'); // no need to check this state 
-									var finalState = calculateBoardState2(intState3, 'a1', '_', 'c1', 'r'); // This gets checked later
+									var intState3 = calculateBoardState(calculateBoardState(intState2, 'c1', '_'), 'b1', 'k'); // no need to check this state 
+									var finalState = calculateBoardState(calculateBoardState(intState3, 'a1', '_'), 'c1', 'r'); // This gets checked later
 													
 									var ExStateWhiteCantCastle = defaultExtendedState.substring(0, 1) + '00' + defaultExtendedState.substring(3); 
 									
@@ -437,11 +444,11 @@ function getLegalMoves(coord, gamestate){
 						// Verify not initially in check, and all intermediate squares are not threatened.
 						if( ! amIInCheck(gamestate, isItWhitesTurn) ){
 						
-							var intState1 = calculateBoardState2(gamestate, 'e1', '_', 'f1', 'k');
+							var intState1 = calculateBoardState(calculateBoardState(gamestate, 'e1', '_'), 'f1', 'k');
 							if( !amIInCheck(intState1, isItWhitesTurn) ){
 								
-								var intState2 = calculateBoardState2(intState1, 'f1', '_', 'g1', 'k'); // no need to check this state 
-								var finalState = calculateBoardState2(intState2, 'h1', '_', 'f1', 'r'); // This gets checked later
+								var intState2 = calculateBoardState(calculateBoardState(intState1, 'f1', '_'), 'g1', 'k'); // no need to check this state 
+								var finalState = calculateBoardState(calculateBoardState(intState2, 'h1', '_'), 'f1', 'r'); // This gets checked later
 								
 								var ExStateWhiteCantCastle = defaultExtendedState.substring(0, 1) + '00' + defaultExtendedState.substring(3); 
 
@@ -458,14 +465,14 @@ function getLegalMoves(coord, gamestate){
 						// Verify not initially in check, and all intermediate squares are not threatened.
 						if( ! amIInCheck(gamestate, isItWhitesTurn) ){
 						
-							var intState1 = calculateBoardState2(gamestate, 'e8', '_', 'd8', 'K');
+							var intState1 = calculateBoardState(calculateBoardState(gamestate, 'e8', '_'), 'd8', 'K');
 							if( !amIInCheck(intState1, isItWhitesTurn) ){
 								
-								var intState2 = calculateBoardState2(intState1, 'd8', '_', 'c8', 'K');
+								var intState2 = calculateBoardState(calculateBoardState(intState1, 'd8', '_'), 'c8', 'K');
 								if( !amIInCheck(intState2, isItWhitesTurn) ){
 									
-									var intState3 = calculateBoardState2(intState2, 'c8', '_', 'b8', 'K'); // no need to check this state 
-									var finalState = calculateBoardState2(intState3, 'a8', '_', 'c8', 'R'); // This gets checked later
+									var intState3 = calculateBoardState(calculateBoardState(intState2, 'c8', '_'), 'b8', 'K'); // no need to check this state 
+									var finalState = calculateBoardState(calculateBoardState(intState3, 'a8', '_'), 'c8', 'R'); // This gets checked later
 									
 									var ExStateBlackCantCastle = defaultExtendedState.substring(0, 3) + '00' + defaultExtendedState.substring(5); 
 									
@@ -482,11 +489,11 @@ function getLegalMoves(coord, gamestate){
 						// Verify not initially in check, and all intermediate squares are not threatened.
 						if( ! amIInCheck(gamestate, isItWhitesTurn) ){
 						
-							var intState1 = calculateBoardState2(gamestate, 'e8', '_', 'f8', 'K');
+							var intState1 = calculateBoardState(calculateBoardState(gamestate, 'e8', '_'), 'f8', 'K');
 							if( !amIInCheck(intState1, isItWhitesTurn) ){
 								
-								var intState2 = calculateBoardState2(intState1, 'f8', '_', 'g8', 'K'); // no need to check this state 
-								var finalState = calculateBoardState2(intState2, 'h8', '_', 'f8', 'R'); // This gets checked later
+								var intState2 = calculateBoardState(calculateBoardState(intState1, 'f8', '_'), 'g8', 'K'); // no need to check this state 
+								var finalState = calculateBoardState(calculateBoardState(intState2, 'h8', '_'), 'f8', 'R'); // This gets checked later
 								
 								var ExStateBlackCantCastle = defaultExtendedState.substring(0, 3) + '00' + defaultExtendedState.substring(5); 
 
@@ -499,19 +506,14 @@ function getLegalMoves(coord, gamestate){
 		break;
 		case 'q':
 		case 'Q':
-			var startX = coord.charCodeAt(0) - 96;
-			var startY =  Number(coord[1]);
-
-			// findAllMovesInLine(+1,+1, defaultExtendedState);
-			// findAllMovesInLine(+1, 0, defaultExtendedState);	
-			// findAllMovesInLine(+1,-1, defaultExtendedState);
-			// findAllMovesInLine(0, +1, defaultExtendedState);	
-			// findAllMovesInLine(0, -1, defaultExtendedState);	
-			// findAllMovesInLine(-1,+1, defaultExtendedState);	
-			// findAllMovesInLine(-1, 0, defaultExtendedState);	
-			// findAllMovesInLine(-1,-1, defaultExtendedState);
-			findAllMovesInLine(false, defaultExtendedState);
-			findAllMovesInLine(true, defaultExtendedState);
+			findAllMovesInLine(+1,+1, defaultExtendedState);
+			findAllMovesInLine(+1, 0, defaultExtendedState);	
+			findAllMovesInLine(+1,-1, defaultExtendedState);
+			findAllMovesInLine(0, +1, defaultExtendedState);	
+			findAllMovesInLine(0, -1, defaultExtendedState);	
+			findAllMovesInLine(-1,+1, defaultExtendedState);	
+			findAllMovesInLine(-1, 0, defaultExtendedState);	
+			findAllMovesInLine(-1,-1, defaultExtendedState);
 		break;
 		case '_':
 			previouslySelectedSquare = null;
@@ -526,10 +528,11 @@ function getLegalMoves(coord, gamestate){
 			delete CandidateLegalMoves[move];
 		}
 	}
+	global = CandidateLegalMoves;
 	return CandidateLegalMoves;
 		
 }
-
+var global;
 function markLegalMoves(coord){
 
 	// Mark the newly selected square.
@@ -678,7 +681,8 @@ function renderBoard(state, highlightedSquares){
 
 	var rows = state.substring(0, 72).split(';');
 	var chessBoard = document.getElementsByClassName("square");
-	
+
+
 	var x = 0;
 	for (const row of rows) {
 		for( const cell of row.split('')){
@@ -699,6 +703,10 @@ function renderBoard(state, highlightedSquares){
 			
 			if( cell == '_' ){ chessBoard[x].innerHTML = '' } 
 		
+				
+			var whitePawn =  (0.8 + (Math.floor((71-x)/9))/10  + 0.0 * [39,40,30,31].includes(x) ); 
+			var blackPawn =  -(0.8 + (Math.floor(x/9))/10  + 0.0 * [39,40,30,31].includes(x) );
+			//chessBoard[x].innerHTML = "whitePawn: " + whitePawn + ", blackPawn: " +blackPawn;
 			x++
 		}
 	}
@@ -817,8 +825,8 @@ function checkmate(){
 	
 }
 function stalemate(){
-	console.log("stalemate!");
-	document.body.innerHTML += '<p> Stalemate!</p>';
+	Console.log("stalemate!");
+	document.body = document.body.innerHTML += '<p> Stalemate!</p>';
 }
 
 function promotePawn(newPiece){

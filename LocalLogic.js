@@ -171,57 +171,44 @@ function getLegalMoves(coord, gamestate){
 	const defaultExtendedState = ((isItWhitesTurn ? '0' : '1') + gamestate.substring(74, 78) + '__');
 		
 
-	// var piece is defined outside
-	function findLineMoves(diagonal, extendedState){
-		// diagonal = true for bishop moves. diagonal = false for rook moves.
-
+	function findAllMovesInLine(dx, dy, extendedState){
+		
+		var iter = 1;
+		var newX = startX + dx;
+		var newY = startY + dy;
+		
 		// Removes the piece from its starting square - (since this )
 		const DefaultNextState = calculateBoardState(gamestate.substring(0, 72) + '|' + extendedState, coord, '_'); 
-		if(diagonal){
-			work(+1,-1);
-			work(+1,+1);
-			work(-1,-1);
-			work(-1,+1);
-		}else{
-			work(+1, 0);
-			work(-1, 0);
-			work( 0, -1);
-			work( 0, +1);
-		}
-		
-		function work(dx, dy){
-			var iter = 1;
-			var newX = startX + dx;
-			var newY = startY + dy;  
-			while( newX <= 8 && newY <= 8 && newX >= 1 && newY >= 1 )
-			{
-				// Rows are enumerated 'backwards' and are 9 chars long due to colon seperator.
-				// Cols are determined by the leading letter. This formula converts a char into its corresponding integer from 0-7
 
-				var index = 9 * (8 - newY) + newX - 1;
-				var pieceOnSquare = gamestate[index];
+		while( newX <= 8 && newY <= 8 && newX >= 1 && newY >= 1 )
+		{
+			// Rows are enumerated 'backwards' and are 9 chars long due to colon seperator.
+			// Cols are determined by the leading letter. This formula converts a char into its corresponding integer from 0-7
 
-				if(  pieceOnSquare == '_'){
-					// The piece is moving to an empty square
+			var index = 9 * (8 - newY) + newX - 1;
 
+			var pieceOnSquare = gamestate[index];
+
+			if(  pieceOnSquare == '_'){
+				// The piece is moving to an empty square
+
+				var ToCoords = String.fromCharCode(newX + 96) + newY;
+				CandidateLegalMoves[ToCoords] = DefaultNextState.substring(0, index) + piece + DefaultNextState.substring(index + 1);
+			}else{ 
+				if(isEnemyPiece(pieceOnSquare)){
+
+					// Represents the piece taking the enemy piece
 					var ToCoords = String.fromCharCode(newX + 96) + newY;
 					CandidateLegalMoves[ToCoords] = DefaultNextState.substring(0, index) + piece + DefaultNextState.substring(index + 1);
-				}else{ 
-					if(isEnemyPiece(pieceOnSquare)){
-
-						// Represents the piece taking the enemy piece
-						var ToCoords = String.fromCharCode(newX + 96) + newY;
-						CandidateLegalMoves[ToCoords] = DefaultNextState.substring(0, index) + piece + DefaultNextState.substring(index + 1);
-						break; 
-					}else{
-						// Cannot capture allied piece, or jump over it.
-						break; 
-					}
+					break; 
+				}else{
+					// Cannot capture allied piece, or jump over it.
+					break; 
 				}
-				var newX = startX + iter * dx;
-				var newY = startY + iter * dy;
-				iter++;
 			}
+			iter++;
+			var newX = startX + iter * dx;
+			var newY = startY + iter * dy;
 		}
 	}
 
@@ -304,9 +291,8 @@ function getLegalMoves(coord, gamestate){
 			break;
 		case 'R':
 		case 'r':
-			
 			var rookExState = defaultExtendedState;
-			// DISABLE CASTLING WHEN ROOK MOVES (MODIFY EXTENDED STATE)
+			// DISABLE CASTLING WHEN ROOK MOVES - MODIFYING EXTENDED STATE
 			switch(coord)
 			{
 				// This indicates rook has moved from starting square (or has moved from another rook's staring square, which doesnt matter).
@@ -318,10 +304,15 @@ function getLegalMoves(coord, gamestate){
 
 			}
 
+			var startX = coord.charCodeAt(0) - 96;
+			var startY =  Number(coord[1]);
 
-
-			findLineMoves(false, rookExState);
-		break;
+			findAllMovesInLine(0, +1, rookExState);
+			findAllMovesInLine(+1, 0, rookExState);
+			findAllMovesInLine(0, -1, rookExState);
+			findAllMovesInLine(-1, 0, rookExState);		
+	
+	break;
 		case 'N':
 		case 'n':
 
@@ -360,7 +351,12 @@ function getLegalMoves(coord, gamestate){
 		case 'B':			
 			var startX = coord.charCodeAt(0) - 96;
 			var startY =  Number(coord[1]);
-			findLineMoves(true, defaultExtendedState);
+			
+			findAllMovesInLine(+1, +1, defaultExtendedState);
+			findAllMovesInLine(+1, -1, defaultExtendedState);
+			findAllMovesInLine(-1, +1, defaultExtendedState);	
+			findAllMovesInLine(-1, -1, defaultExtendedState);
+
 		break;
 		case 'k':
 		case 'K':
@@ -489,10 +485,16 @@ function getLegalMoves(coord, gamestate){
 		case 'Q':
 			var startX = coord.charCodeAt(0) - 96;
 			var startY =  Number(coord[1]);
-
-			findLineMoves(false, defaultExtendedState);
-			findLineMoves(true, defaultExtendedState);
-		break;
+			
+			findAllMovesInLine(+1,+1, defaultExtendedState);
+			findAllMovesInLine(+1, 0, defaultExtendedState);	
+			findAllMovesInLine(+1,-1, defaultExtendedState);
+			findAllMovesInLine(0, +1, defaultExtendedState);	
+			findAllMovesInLine(0, -1, defaultExtendedState);	
+			findAllMovesInLine(-1,+1, defaultExtendedState);	
+			findAllMovesInLine(-1, 0, defaultExtendedState);	
+			findAllMovesInLine(-1,-1, defaultExtendedState);		
+			break;
 		case '_':
 			previouslySelectedSquare = null;
 			throw "This should not be possible - trying to move an empty square";
