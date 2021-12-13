@@ -15,12 +15,13 @@ function calculateBestMove(gamestate){
 	console.log("# States salvaged: " + Object.keys(AllAnalysedStates).length);
 	
 	// Now calculate best move.
-	var bestMoveAndScore = bestMoveToDepth(gamestate, maxDepth);
-	
+	bestMoveToDepth(gamestate, maxDepth);
+	analystedstate = getAnalysedStates(gamestate);
+
 	console.log("# States analysed: " + Object.keys(AllAnalysedStates).length);
-	console.log("Score Estimate: " + bestMoveAndScore.bestScore);
+	console.log("Score Estimate: " + analystedstate.Score);
 	
-	return bestMoveAndScore.bestState;
+	return analystedstate.BestChild;
 }
 String.prototype.isWhitesTurn = function isItWhitesTurn() {
 	 return (this[73] === '1');
@@ -31,20 +32,16 @@ String.prototype.isWhitesTurn = function isItWhitesTurn() {
 var AllAnalysedStates = {};
 var AllAnalysedStatesClone = {};
 
-
-// The score(state, depth) is defined as the best move of the children to depth - 1
-// returns {bestState: bestState, bestScore: bestScore}
+// Stores information about the state in the AllAnalysedStatesClone in the format: {Score: 0, Depth: 0, ChildStates: [], BestChild: '', State: ''}
 function bestMoveToDepth(startingState, depth){
 
 	// See if state has already been analsed. If not, create the state in AllAnalysedStates
 	var analysedStartingState = createOrGetAnalysedState(startingState);
 	var isWhitesTurn = startingState.isWhitesTurn();
 	
-	// If the state has been analysed to sufficient depth, just return the already calculated best move.
+	// If the state has been analysed to sufficient depth, just return - the score/best mvoe will be in AllAnalysedStates.
 	if(analysedStartingState.Depth >= depth){
-		
-		// (Also catches check and stalemates, since their depth is set to inf).
-		return {bestState: analysedStartingState.BestChild, bestScore: analysedStartingState.Score};
+		return;
 	}
 	
 	// If ChildStates have already been calculated, use them. Otherwise calculate the childstates
@@ -72,15 +69,12 @@ function bestMoveToDepth(startingState, depth){
 			analysedStartingState.Depth = 10000;
 			analysedStartingState.BestChild = startingState;
 
-			return {bestState: startingState, bestScore: bestScore};
+			return;
 		}
 	}
 
-	// TODO: This doesnt work for checkmates because of how the logic above works.
-	// I think this is failing because if multiple paths lead to checkmate, there is no prioritisation for the fastest, and it will never actually reach it
 	var bestState;
 	var bestScore;
-
 	for(var possState of analysedStartingState.ChildStates){
 		var analysedPossState = createOrGetAnalysedState(possState);
 		
@@ -107,7 +101,6 @@ function bestMoveToDepth(startingState, depth){
 	analysedStartingState.Depth = depth;
 	analysedStartingState.BestChild = bestState;
 	analysedStartingState.Score = bestScore;
-	return {bestState: bestState, bestScore: bestScore};
 }
 
 function getAnalysedStates(stateString){
