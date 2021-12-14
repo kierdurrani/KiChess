@@ -310,8 +310,16 @@ function getLegalMoves(coord, gamestate){
 			findAllMovesInLine(0, +1, rookExState);
 			findAllMovesInLine(+1, 0, rookExState);
 			findAllMovesInLine(0, -1, rookExState);
-			findAllMovesInLine(-1, 0, rookExState);		
+			findAllMovesInLine(-1, 0, rookExState);	
+			
+				// TODO, catch the edge case of a rook being captured, and then replaced with the other allied rook in its starting square.
+				// this currently does not have the castling rights disabled!
 	
+			if(CandidateLegalMoves['a1']){ CandidateLegalMoves['a1'] =  CandidateLegalMoves['a1'].substring(0, 74) + 0 + CandidateLegalMoves['a1'].substring(75); }
+			if(CandidateLegalMoves['h1']){ CandidateLegalMoves['h1'] =  CandidateLegalMoves['h1'].substring(0, 75) + 0 + CandidateLegalMoves['h1'].substring(76); }
+			if(CandidateLegalMoves['a8']){ CandidateLegalMoves['a8'] =  CandidateLegalMoves['a8'].substring(0, 76) + 0 + CandidateLegalMoves['a8'].substring(77); }
+			if(CandidateLegalMoves['h8']){ CandidateLegalMoves['h8'] =  CandidateLegalMoves['h8'].substring(0, 77) + 0 + CandidateLegalMoves['h8'].substring(78); }
+
 	break;
 		case 'N':
 		case 'n':
