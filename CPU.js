@@ -15,7 +15,7 @@ function calculateBestMove(gamestate){
 	console.log("# States salvaged: " + Object.keys(AllAnalysedStates).length);
 	
 	// Now calculate best move.
-	bestMoveToDepth(gamestate, maxDepth);
+	MinMax(gamestate, maxDepth, -1000000, 1000000);
 	analystedstate = getAnalysedStates(gamestate);
 
 	console.log("# States analysed: " + Object.keys(AllAnalysedStates).length);
@@ -33,7 +33,7 @@ var AllAnalysedStates = {};
 var AllAnalysedStatesClone = {};
 
 // Stores information about the state in the AllAnalysedStatesClone in the format: {Score: 0, Depth: 0, ChildStates: [], BestChild: '', State: ''}
-function bestMoveToDepth(startingState, depth){
+function MinMax(startingState, depth, whitesWorstForceableScore, blacksWorstForceableScore){
 
 	// See if state has already been analsed. If not, create the state in AllAnalysedStates
 	var analysedStartingState = createOrGetAnalysedState(startingState);
@@ -75,12 +75,32 @@ function bestMoveToDepth(startingState, depth){
 
 	var bestState;
 	var bestScore;
+	var alpha = whitesWorstForceableScore; // This is the score white can get at least as good as
+	var beta = blacksWorstForceableScore;  //
 	for(var possState of analysedStartingState.ChildStates){
 		var analysedPossState = createOrGetAnalysedState(possState);
 		
+		//TODO - confirm correctness
+		if(bestScore)
+		{
+			if(isWhitesTurn){
+				// white is trying to maximise.
+				if(bestScore < alpha){
+					break;
+				}
+			}else{
+				// blacks turn
+				if(bestScore < alpha){
+					// blacks turn. and if we reach this situation, 
+					// black could force a move worse than a move white could get down another branch. 
+					break;
+				}
+			}
+		}
+
 		if(analysedPossState.Depth < depth){
 			// we have not analysed this state to sufficient depth, so analyse with recursive call!
-			bestMoveToDepth(possState, (depth - 1));
+			MinMax(possState, depth - 1, alpha, beta);
 		}
 		
 		// We can now be sure that all child states have been analysed to sufficient depth. Now we simply min_max out of these child states.
@@ -89,18 +109,21 @@ function bestMoveToDepth(startingState, depth){
 			if( (analysedPossState.Score > bestScore) || (bestScore == null) ){
 				bestScore = analysedPossState.Score;
 				bestState = analysedPossState.State;
+				if(bestScore > alpha){ alpha = bestScore } 
 			}
 		}else{
 			// black wants to find lowest score;
 			if( (analysedPossState.Score < bestScore) || (bestScore == null) ){
 				bestScore = analysedPossState.Score;
 				bestState = analysedPossState.State;
+				if(bestScore < beta){ beta = bestScore } 
 			}
 		}
 	}
 	analysedStartingState.Depth = depth;
 	analysedStartingState.BestChild = bestState;
 	analysedStartingState.Score = bestScore;
+	// todo, set alpha and beta
 }
 
 function getAnalysedStates(stateString){
