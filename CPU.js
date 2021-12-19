@@ -5,7 +5,7 @@ function calculateBestMove(gamestate){
 
 	// Salvage subtree of states down the path we are going.
 	if(salvage)	{
-		if(getAnalysedStates(gamestate)){
+		if(getAnalysedState(gamestate)){
 			cloneAnalysedSubTree( gamestate, maxDepth);
 		}
 	
@@ -36,7 +36,7 @@ var AllAnalysedStates = {};
 var AllAnalysedStatesClone = {};
 
 // Stores information about the state in the AllAnalysedStatesClone in the format: {Score: 0, Depth: 0, ChildStates: [], BestChild: '', State: ''}
-function MinMax(startingState, depth, whitesWorstForceableScore, blacksWorstForceableScore){
+function MinMax(startingState, depth, alpha, beta){
 
 	// See if state has already been analsed. If not, create the state in AllAnalysedStates
 	var analysedStartingState = createOrGetAnalysedState(startingState);
@@ -72,9 +72,6 @@ function MinMax(startingState, depth, whitesWorstForceableScore, blacksWorstForc
 
 	var bestState;
 	var bestScore;
-	var alpha = whitesWorstForceableScore; // This is the score white can get at least as good as
-	var beta = blacksWorstForceableScore;  //
-
 	for(var possState of analysedStartingState.ChildStates)
 	{
 
@@ -132,7 +129,7 @@ function MinMax(startingState, depth, whitesWorstForceableScore, blacksWorstForc
 	return bestScore;
 }
 
-function getAnalysedStates(stateString){
+function getAnalysedState(stateString){
 
 	if(AllAnalysedStates[stateString]){
 		return AllAnalysedStates[stateString];
@@ -162,7 +159,7 @@ function cloneAnalysedSubTree(rootState, depthLimit){
 
 	if(depthLimit < 0 ){ return null;} // prevents loops
 
-	var analysedState = getAnalysedStates(rootState);
+	var analysedState = getAnalysedState(rootState);
 
 	// Insert this into the new tree if it isnt already there.
 	if(AllAnalysedStatesClone[rootState]){
@@ -175,7 +172,7 @@ function cloneAnalysedSubTree(rootState, depthLimit){
 	// ChildStates is a lazily evaluated field, so could be null..
 	if(analysedState.ChildStates){
 		for(var childState of analysedState.ChildStates){
-			if(getAnalysedStates(childState)){
+			if(getAnalysedState(childState)){
 				cloneAnalysedSubTree( childState, depthLimit - 1);
 			}
 		}
