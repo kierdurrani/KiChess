@@ -1,27 +1,30 @@
 var maxDepth = 4;
+var NextMove;
 function calculateBestMove(gamestate){
 
 	// Salvage subtree of states down the path we are going. - 
 	// This introduces a bug where it cant converge to checkmate state because cant find fastest path/gets stuck in a loop
 	
-	//console.log("# States from end of last go: " + Object.keys(AllAnalysedStatesClone).length);
-	//var currentStateAnal = getAnalysedStates(gamestate);
-	//if(currentStateAnal){ 
-	//	cloneAnalysedSubTree(currentStateAnal, maxDepth);
-	//}
-	//AllAnalysedStates = AllAnalysedStatesClone;
-	//AllAnalysedStatesClone = {};
-	AllAnalysedStates = {};
+	console.log("# States from end of last go: " + Object.keys(AllAnalysedStates).length);
+	var currentStateAnal = getAnalysedStates(gamestate);
+	if(currentStateAnal){ 
+		cloneAnalysedSubTree(currentStateAnal, maxDepth);
+	}
+
+	AllAnalysedStates = AllAnalysedStatesClone;
+	AllAnalysedStatesClone = {};
 	console.log("# States salvaged: " + Object.keys(AllAnalysedStates).length);
-	
+
 	// Now calculate best move.
-	MinMax(gamestate, maxDepth, -1000000, 1000000);
+	var score = MinMax(gamestate, maxDepth, -1000000, 1000000);
 	analystedstate = getAnalysedStates(gamestate);
 
 	console.log("# States analysed: " + Object.keys(AllAnalysedStates).length);
-	console.log("Score Estimate: " + analystedstate.Score);
-	
-	return analystedstate.BestChild;
+	console.log("Score Estimate: " + score);
+	console.log("Cache Hits: " + cacheHits);
+	cacheHits = 0;
+
+	return NextMove;
 }
 String.prototype.isWhitesTurn = function isItWhitesTurn() {
 	 return (this[73] === '1');
@@ -37,13 +40,15 @@ function MinMax(startingState, depth, whitesWorstForceableScore, blacksWorstForc
 
 	// See if state has already been analsed. If not, create the state in AllAnalysedStates
 	var analysedStartingState = createOrGetAnalysedState(startingState);
-	var isWhitesTurn = startingState.isWhitesTurn();
 	
 	// If the state has been analysed to sufficient depth, just return - the score/best mvoe will be in AllAnalysedStates.
-	if(analysedStartingState.Depth >= depth){
-		return;
+	if(depth <= 0){
+		return analysedStartingState.Score;
 	}
-	
+
+	// Cache this
+	var isWhitesTurn = startingState.isWhitesTurn();
+
 	// If ChildStates have already been calculated, use them. Otherwise calculate the childstates
 	if(! analysedStartingState.ChildStates) { 
 		analysedStartingState.ChildStates = calculateChildStates(startingState);
@@ -66,10 +71,7 @@ function MinMax(startingState, depth, whitesWorstForceableScore, blacksWorstForc
 			}
 
 			// Once in mate, always in mate. So this is known to infinite depth, and all childstates is just this state.
-			analysedStartingState.Depth = 10000;
-			analysedStartingState.BestChild = startingState;
-
-			return;
+			return analysedStartingState.Score;
 		}
 	}
 
@@ -78,14 +80,14 @@ function MinMax(startingState, depth, whitesWorstForceableScore, blacksWorstForc
 	var alpha = whitesWorstForceableScore; // This is the score white can get at least as good as
 	var beta = blacksWorstForceableScore;  //
 	for(var possState of analysedStartingState.ChildStates){
-		var analysedPossState = createOrGetAnalysedState(possState);
 		
-		//TODO - confirm correctness
+		// Alpha-Beta Pruning 
+		// may not need to consider any other possStates if opponent should never play this state.
 		if(bestScore)
 		{
 			if(isWhitesTurn){
 				// white is trying to maximise.
-				if(bestScore < alpha){
+				if(bestScore > beta){
 					break;
 				}
 			}else{
@@ -98,61 +100,56 @@ function MinMax(startingState, depth, whitesWorstForceableScore, blacksWorstForc
 			}
 		}
 
-		if(analysedPossState.Depth < depth){
-			// we have not analysed this state to sufficient depth, so analyse with recursive call!
-			MinMax(possState, depth - 1, alpha, beta);
-		}
-		
+		var possScore =	MinMax(possState, depth - 1, alpha, beta);
+				
 		// We can now be sure that all child states have been analysed to sufficient depth. Now we simply min_max out of these child states.
 		if(isWhitesTurn){ 
 			// white wants to find highest score;
-			if( (analysedPossState.Score > bestScore) || (bestScore == null) ){
-				bestScore = analysedPossState.Score;
-				bestState = analysedPossState.State;
+			if( (possScore > bestScore) || (bestScore == null) ){
+				bestScore = possScore;
+				bestState = possState;
 				if(bestScore > alpha){ alpha = bestScore } 
 			}
 		}else{
 			// black wants to find lowest score;
-			if( (analysedPossState.Score < bestScore) || (bestScore == null) ){
-				bestScore = analysedPossState.Score;
-				bestState = analysedPossState.State;
+			if( (possScore < bestScore) || (bestScore == null) ){
+				bestScore = possScore;
+				bestState = possState;
 				if(bestScore < beta){ beta = bestScore } 
 			}
 		}
 	}
-	analysedStartingState.Depth = depth;
-	analysedStartingState.BestChild = bestState;
-	analysedStartingState.Score = bestScore;
-	// todo, set alpha and beta
+	
+	if(depth === maxDepth){
+		console.log("If top level, maximise state");
+		console.log(bestState);
+		NextMove = bestState;
+	}
+	return bestScore;
 }
 
 function getAnalysedStates(stateString){
-	var hashCode = stateString;
-	if(AllAnalysedStates[hashCode]){
-		return AllAnalysedStates[hashCode];
+
+	if(AllAnalysedStates[stateString]){
+		return AllAnalysedStates[stateString];
 	}
 
 	return null; 
 }
-
+var cacheHits = 0;
 function createOrGetAnalysedState(stateString){
 
-	var hashCode = stateString;
-	if(AllAnalysedStates[hashCode]){		
-		return AllAnalysedStates[hashCode];		
-	}
-	var baseScore = calculateMaterialScore(stateString);
-	
-	var AnalysedState = {
-		Score: baseScore,
-		Depth: 0,
-		ChildStates: null, 
-		BestChild: null,
-		State: stateString
+	if(AllAnalysedStates[stateString]){	
+		cacheHits++;	
+		return AllAnalysedStates[stateString];		
 	}
 
-	AllAnalysedStates[hashCode] = AnalysedState;
-	
+	var AnalysedState = {
+		Score: calculateMaterialScore(stateString),
+		ChildStates: null
+	}
+
+	AllAnalysedStates[stateString] = AnalysedState;
 	return AnalysedState;
 }
 
@@ -167,12 +164,11 @@ function cloneAnalysedSubTree(rootState, depthLimit){
 	}
 	
 	// Now insert the root node.
-	var hashCode = rootState.State; //.hashCode();
-	if(AllAnalysedStatesClone[hashCode]){
-
+	if(AllAnalysedStatesClone[rootState]){
 		return;
+	}else{
+		AllAnalysedStatesClone[rootState] = rootState;
 	}
-	AllAnalysedStatesClone[hashCode] = rootState;
 }
 
 // Returns the child states as a list.
@@ -188,7 +184,7 @@ function calculateChildStates(totalstate){
 	}
 	
 	for (let x = 0; x < 72 ; x++) {
-		if(referenceState[x] === '_' | referenceState[x] === ';'  ){continue;}
+		if(referenceState[x] === '_' || referenceState[x] === ';'  ){continue;}
 		if(referenceState[x] === totalstate[x]){
 			// indicates is allied piece.
 			var letterCoord =  (x % 9) + 1 ;
@@ -242,24 +238,3 @@ function calculateMaterialScore(gamestate){
 	}
 	return score;
 }
-
-// Utility Functions
-var time = 0;
-function start(){
-    time = Date.now();
-}
-function lap() {
-    var delta = Date.now() - time; // milliseconds elapsed since start
-    
-    console.log("TIME ELAPSED: " + delta);
-};
-String.prototype.hashCode = function hash() {
-  var hash = 0, i, chr;
-  if (this.length === 0) return hash;
-  for (i = 0; i < this.length; i++) {
-    chr   = this.charCodeAt(i);
-    hash  = ((hash << 5) - hash) + chr;
-    hash |= 0; // Convert to 32bit integer
-  }
-  return hash;
-};
