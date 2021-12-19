@@ -1,24 +1,24 @@
-var maxDepth = 4;
+var maxDepth = 5;
 var NextMove;
+var salvage = true;
 function calculateBestMove(gamestate){
 
-	// Salvage subtree of states down the path we are going. - 
-	// This introduces a bug where it cant converge to checkmate state because cant find fastest path/gets stuck in a loop
+	// Salvage subtree of states down the path we are going.
+	if(salvage)	{
+		if(getAnalysedStates(gamestate)){
+			cloneAnalysedSubTree( gamestate, maxDepth);
+		}
 	
-	console.log("# States from end of last go: " + Object.keys(AllAnalysedStates).length);
-	var currentStateAnal = getAnalysedStates(gamestate);
-	if(currentStateAnal){ 
-		cloneAnalysedSubTree(currentStateAnal, maxDepth);
+		AllAnalysedStates = AllAnalysedStatesClone;
+		console.log("# States salvaged: " + Object.keys(AllAnalysedStatesClone).length);
+		AllAnalysedStatesClone = {};
+	}else{
+		AllAnalysedStates = {};
 	}
-
-	AllAnalysedStates = AllAnalysedStatesClone;
-	AllAnalysedStatesClone = {};
-	console.log("# States salvaged: " + Object.keys(AllAnalysedStates).length);
-
+	
 	// Now calculate best move.
 	var score = MinMax(gamestate, maxDepth, -1000000, 1000000);
-	analystedstate = getAnalysedStates(gamestate);
-
+	
 	console.log("# States analysed: " + Object.keys(AllAnalysedStates).length);
 	console.log("Score Estimate: " + score);
 	console.log("Cache Hits: " + cacheHits);
@@ -30,7 +30,6 @@ String.prototype.isWhitesTurn = function isItWhitesTurn() {
 	 return (this[73] === '1');
 };
 
-
 // Hashtable of lists of analysed States
 var AllAnalysedStates = {};
 var AllAnalysedStatesClone = {};
@@ -41,48 +40,45 @@ function MinMax(startingState, depth, whitesWorstForceableScore, blacksWorstForc
 	// See if state has already been analsed. If not, create the state in AllAnalysedStates
 	var analysedStartingState = createOrGetAnalysedState(startingState);
 	
-	// If the state has been analysed to sufficient depth, just return - the score/best mvoe will be in AllAnalysedStates.
-	if(depth <= 0){
-		return analysedStartingState.Score;
-	}
+	// If the state has been analysed to sufficient depth, just return the raw score.
+	if(depth <= 0){ return analysedStartingState.Score; }
 
 	// Cache this
 	var isWhitesTurn = startingState.isWhitesTurn();
 
-	// If ChildStates have already been calculated, use them. Otherwise calculate the childstates
+	// Lazy Evaluation: If ChildStates have already been calculated, use it. Otherwise calculate the childstates
 	if(! analysedStartingState.ChildStates) { 
 		analysedStartingState.ChildStates = calculateChildStates(startingState);
+	}
 
-		// If there are no legal playable moves - this state is actually a mate position.
-		if(analysedStartingState.ChildStates.length === 0)
+	// If there are no legal playable moves - this state is actually a mate position.
+	if(analysedStartingState.ChildStates.length === 0)
+	{
+		if( amIInCheck(startingState, startingState.isWhitesTurn()) )
 		{
-			if( amIInCheck(startingState, startingState.isWhitesTurn()) )
-			{
-				// checkmate
-				// var discoveredMateDepth = (maxDepth - depth); // read depth as 'current depth'
-				if(isWhitesTurn){ 
-					analysedStartingState.Score = -10000 - depth;
-				}else{ 							
-					analysedStartingState.Score = +10000 + depth;
-				}				
-			}else{
-				// stalemate score is zero.
-				analysedStartingState.Score = 0;
-			}
-
-			// Once in mate, always in mate. So this is known to infinite depth, and all childstates is just this state.
-			return analysedStartingState.Score;
+			if(isWhitesTurn){ // checkmate
+				analysedStartingState.Score = -10000;
+			}else{ 
+				analysedStartingState.Score = +10000;
+			}				
+		}else{
+			// stalemate score is zero.
+			analysedStartingState.Score = 0;
 		}
+
+		return analysedStartingState.Score;
 	}
 
 	var bestState;
 	var bestScore;
 	var alpha = whitesWorstForceableScore; // This is the score white can get at least as good as
 	var beta = blacksWorstForceableScore;  //
-	for(var possState of analysedStartingState.ChildStates){
-		
+
+	for(var possState of analysedStartingState.ChildStates)
+	{
+
 		// Alpha-Beta Pruning 
-		// may not need to consider any other possStates if opponent should never play this state.
+		// i.e. We do not need to consider other possStates if opponent should never play a move resulting in this startingState.
 		if(bestScore)
 		{
 			if(isWhitesTurn){
@@ -99,9 +95,9 @@ function MinMax(startingState, depth, whitesWorstForceableScore, blacksWorstForc
 				}
 			}
 		}
-
+		
 		var possScore =	MinMax(possState, depth - 1, alpha, beta);
-				
+
 		// We can now be sure that all child states have been analysed to sufficient depth. Now we simply min_max out of these child states.
 		if(isWhitesTurn){ 
 			// white wants to find highest score;
@@ -121,9 +117,16 @@ function MinMax(startingState, depth, whitesWorstForceableScore, blacksWorstForc
 	}
 	
 	if(depth === maxDepth){
-		console.log("If top level, maximise state");
-		console.log(bestState);
+		// If top level, record best state
 		NextMove = bestState;
+	}
+
+	// This encourages faster convergence to checkmates.
+	if(bestScore > +1000){
+		return (bestScore - 1);
+	}
+	if(bestScore < -1000){
+		return (bestScore + 1);
 	}
 	return bestScore;
 }
@@ -136,6 +139,7 @@ function getAnalysedStates(stateString){
 
 	return null; 
 }
+
 var cacheHits = 0;
 function createOrGetAnalysedState(stateString){
 
@@ -154,24 +158,33 @@ function createOrGetAnalysedState(stateString){
 }
 
 function cloneAnalysedSubTree(rootState, depthLimit){
+
 	if(depthLimit < 0 ){ return null;} // prevents loops
 
-	// ChildStates is a lazily evaluated field. The childStates may or may not be analysed!
-	if(rootState.ChildStates){
-		for(var childState of rootState.ChildStates){
-			cloneAnalysedSubTree(createOrGetAnalysedState(childState), depthLimit - 1);
-		}
-	}
-	
-	// Now insert the root node.
+	var analysedState = getAnalysedStates(rootState);
+
+	// Insert this into the new tree if it isnt already there.
 	if(AllAnalysedStatesClone[rootState]){
 		return;
 	}else{
-		AllAnalysedStatesClone[rootState] = rootState;
+		AllAnalysedStatesClone[rootState] = analysedState;
+	}
+	
+	// Recurse on all childstates
+	// ChildStates is a lazily evaluated field, so could be null..
+	if(analysedState.ChildStates){
+		for(var childState of analysedState.ChildStates){
+			if(getAnalysedStates(childState)){
+				cloneAnalysedSubTree( childState, depthLimit - 1);
+			}
+		}
+		if(analysedState.ChildStates.length === 0 ){
+			AllAnalysedStatesClone[rootState] = null;
+		}
 	}
 }
 
-// Returns the child states as a list.
+// Returns the childStates as a list.
 function calculateChildStates(totalstate){
 	
 	var allPossibleMoves = [];
