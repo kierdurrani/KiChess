@@ -1,6 +1,6 @@
-var maxDepth = 5;
-var NextMove;
+var maxDepth = 4;
 var salvage = true;
+var NextMove;
 function calculateBestMove(gamestate){
 
 	// Salvage subtree of states down the path we are going.
@@ -26,6 +26,7 @@ function calculateBestMove(gamestate){
 
 	return NextMove;
 }
+
 String.prototype.isWhitesTurn = function isItWhitesTurn() {
 	 return (this[73] === '1');
 };
@@ -84,13 +85,13 @@ function MinMax(startingState, depth, whitesWorstForceableScore, blacksWorstForc
 			if(isWhitesTurn){
 				// white is trying to maximise.
 				if(bestScore > beta){
+					// Indicates that white can force a move worse than a move black could get by choosing another branch earlier on
 					break;
 				}
 			}else{
 				// blacks turn
 				if(bestScore < alpha){
-					// blacks turn. and if we reach this situation, 
-					// black could force a move worse than a move white could get down another branch. 
+					// Indicates that black can force a move worse than a move white could get by choosing another branch earlier on. 
 					break;
 				}
 			}
