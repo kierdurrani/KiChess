@@ -404,7 +404,7 @@ function getLegalMoves(coord, gamestate){
 						// Verify not initially in check, and all intermediate squares are not threatened.
 						if( ! amIInCheck(gamestate, isItWhitesTurn) ){
 						
-							var intState1 = calculateBoardState(gamestate, 'e1', '_', 'd1', 'k');
+							var intState1 = calculateBoardState2(gamestate, 'e1', '_', 'd1', 'k');
 							if( !amIInCheck(intState1, isItWhitesTurn) ){
 								
 								var intState2 = calculateBoardState2(intState1, 'd1', '_', 'c1', 'k');
