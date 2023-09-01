@@ -1,2 +1,3 @@
-KiChess is an in-browser chess engine implementing an alpha-beta minmax algorithm.
-To run, checkout the repository and open Index.html in your browser.
+KiChess is an in-browser chess engine.
+It implements a minmax algorithm with alpha-beta pruning.
+To run: Checkout the repository, or download and extract the zip file, then  open index.html in your web browser.
